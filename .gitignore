@@ -7,3 +7,6 @@ npm-debug.log*
 docker-data
 
 .DS_Store
+
+**/xcuserdata/
+**/*.xcuserstate
