@@ -31,10 +31,16 @@ cp .env.example .env
 docker compose up --build
 ```
 
-For local Docker, set:
+For Docker, `DATABASE_URL` must point at the Compose service name:
 
 ```env
 DATABASE_URL=postgresql://vpn:vpn@postgres:5432/vpn_backend?schema=public
+```
+
+If port `3000` is already used on the host, set another published port while keeping `PORT=3000` inside the container:
+
+```env
+API_HOST_PORT=3001
 ```
 
 ## Environment
