@@ -59,6 +59,7 @@ struct HomeView: View {
                             .font(.system(size: 58, weight: .bold))
                             .foregroundStyle(.white)
                     }
+                    .opacity(viewModel.connectionState == .connecting ? 0.65 : 1)
                 }
                 .buttonStyle(.plain)
                 Text(connectionText)

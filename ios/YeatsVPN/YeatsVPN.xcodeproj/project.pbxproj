@@ -7,128 +7,747 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		200000000000000000000001 /* YeatsVPNApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000001 /* YeatsVPNApp.swift */; };
-		200000000000000000000002 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000002 /* AppEnvironment.swift */; };
-		200000000000000000000003 /* AppRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000003 /* AppRoute.swift */; };
-		200000000000000000000004 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000004 /* APIClient.swift */; };
-		200000000000000000000005 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000005 /* APIError.swift */; };
-		200000000000000000000006 /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000006 /* APIEndpoint.swift */; };
-		200000000000000000000007 /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000007 /* TokenStore.swift */; };
-		200000000000000000000008 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000008 /* Models.swift */; };
-		200000000000000000000009 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000009 /* AuthService.swift */; };
-		20000000000000000000000A /* VPNService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000A /* VPNService.swift */; };
-		20000000000000000000000B /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000B /* KeychainService.swift */; };
-		20000000000000000000000C /* DeviceIDService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000C /* DeviceIDService.swift */; };
-		20000000000000000000000D /* ConnectivityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000D /* ConnectivityMonitor.swift */; };
-		20000000000000000000000E /* FutureIntegrations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000E /* FutureIntegrations.swift */; };
-		20000000000000000000000F /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000F /* DesignSystem.swift */; };
-		200000000000000000000010 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000010 /* Components.swift */; };
-		200000000000000000000011 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000011 /* SplashView.swift */; };
-		200000000000000000000012 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000012 /* AuthViewModel.swift */; };
-		200000000000000000000013 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000013 /* LoginView.swift */; };
-		200000000000000000000014 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000014 /* RegisterView.swift */; };
-		200000000000000000000015 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000015 /* HomeViewModel.swift */; };
-		200000000000000000000016 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000016 /* HomeView.swift */; };
-		200000000000000000000017 /* VPNViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000017 /* VPNViewModel.swift */; };
-		200000000000000000000018 /* VPNView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000018 /* VPNView.swift */; };
-		200000000000000000000019 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000019 /* ProfileViewModel.swift */; };
-		20000000000000000000001A /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001A /* ProfileView.swift */; };
-		20000000000000000000001B /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001B /* RootView.swift */; };
+		200000000000000000000001 /* App/YeatsVPNApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000001 /* App/YeatsVPNApp.swift */; };
+		200000000000000000000002 /* App/AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000002 /* App/AppEnvironment.swift */; };
+		200000000000000000000003 /* App/AppRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000003 /* App/AppRoute.swift */; };
+		200000000000000000000004 /* Networking/APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000004 /* Networking/APIClient.swift */; };
+		200000000000000000000005 /* Networking/APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000005 /* Networking/APIError.swift */; };
+		200000000000000000000006 /* Networking/APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000006 /* Networking/APIEndpoint.swift */; };
+		200000000000000000000007 /* Networking/TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000007 /* Networking/TokenStore.swift */; };
+		200000000000000000000008 /* Models/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000008 /* Models/Models.swift */; };
+		200000000000000000000009 /* Services/AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000009 /* Services/AuthService.swift */; };
+		20000000000000000000000A /* Services/VPNService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000A /* Services/VPNService.swift */; };
+		20000000000000000000000B /* Services/KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000B /* Services/KeychainService.swift */; };
+		20000000000000000000000C /* Services/DeviceIDService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000C /* Services/DeviceIDService.swift */; };
+		20000000000000000000000D /* Core/ConnectivityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000D /* Core/ConnectivityMonitor.swift */; };
+		20000000000000000000000E /* Core/FutureIntegrations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000E /* Core/FutureIntegrations.swift */; };
+		20000000000000000000000F /* DesignSystem/DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000000F /* DesignSystem/DesignSystem.swift */; };
+		200000000000000000000010 /* DesignSystem/Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000010 /* DesignSystem/Components.swift */; };
+		200000000000000000000011 /* Features/Auth/SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000011 /* Features/Auth/SplashView.swift */; };
+		200000000000000000000012 /* Features/Auth/AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000012 /* Features/Auth/AuthViewModel.swift */; };
+		200000000000000000000013 /* Features/Auth/LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000013 /* Features/Auth/LoginView.swift */; };
+		200000000000000000000014 /* Features/Auth/RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000014 /* Features/Auth/RegisterView.swift */; };
+		200000000000000000000015 /* Features/Home/HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000015 /* Features/Home/HomeViewModel.swift */; };
+		200000000000000000000016 /* Features/Home/HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000016 /* Features/Home/HomeView.swift */; };
+		200000000000000000000017 /* Features/VPN/VPNViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000017 /* Features/VPN/VPNViewModel.swift */; };
+		200000000000000000000018 /* Features/VPN/VPNView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000018 /* Features/VPN/VPNView.swift */; };
+		200000000000000000000019 /* Features/Profile/ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000019 /* Features/Profile/ProfileViewModel.swift */; };
+		20000000000000000000001A /* Features/Profile/ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001A /* Features/Profile/ProfileView.swift */; };
+		20000000000000000000001B /* App/RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001B /* App/RootView.swift */; };
 		20000000000000000000001C /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 300000000000000000000001 /* KeychainAccess */; };
-		20000000000000000000001D /* PreviewEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001D /* PreviewEnvironment.swift */; };
+		20000000000000000000001D /* App/PreviewEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001D /* App/PreviewEnvironment.swift */; };
+		20000000000000000000001E /* Core/AppleVPNManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001F /* Core/AppleVPNManager.swift */; };
+		20000000000000000000001F /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */; };
 		200000000000000000000101 /* YeatsVPNTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000101 /* YeatsVPNTests.swift */; };
+		A385BEAF2FDCCFC000F657E9 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */; };
+		A385BEB72FDCCFC000F657E9 /* PacketTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A385BEAC2FDCCFC000F657E9 /* PacketTunnel.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		900000000000000000000102 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 600000000000000000000001;
+			remoteInfo = YeatsVPN;
+		};
+		A385BEB52FDCCFC000F657E9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A385BEAB2FDCCFC000F657E9;
+			remoteInfo = PacketTunnel;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A385BEBC2FDCCFC000F657E9 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A385BEB72FDCCFC000F657E9 /* PacketTunnel.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		100000000000000000000001 /* YeatsVPNApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/YeatsVPNApp.swift; sourceTree = "<group>"; };
-		100000000000000000000002 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppEnvironment.swift; sourceTree = "<group>"; };
-		100000000000000000000003 /* AppRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppRoute.swift; sourceTree = "<group>"; };
-		100000000000000000000004 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/APIClient.swift; sourceTree = "<group>"; };
-		100000000000000000000005 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/APIError.swift; sourceTree = "<group>"; };
-		100000000000000000000006 /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/APIEndpoint.swift; sourceTree = "<group>"; };
-		100000000000000000000007 /* TokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/TokenStore.swift; sourceTree = "<group>"; };
-		100000000000000000000008 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/Models.swift; sourceTree = "<group>"; };
-		100000000000000000000009 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/AuthService.swift; sourceTree = "<group>"; };
-		10000000000000000000000A /* VPNService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/VPNService.swift; sourceTree = "<group>"; };
-		10000000000000000000000B /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/KeychainService.swift; sourceTree = "<group>"; };
-		10000000000000000000000C /* DeviceIDService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/DeviceIDService.swift; sourceTree = "<group>"; };
-		10000000000000000000000D /* ConnectivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ConnectivityMonitor.swift; sourceTree = "<group>"; };
-		10000000000000000000000E /* FutureIntegrations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/FutureIntegrations.swift; sourceTree = "<group>"; };
-		10000000000000000000000F /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem/DesignSystem.swift; sourceTree = "<group>"; };
-		100000000000000000000010 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem/Components.swift; sourceTree = "<group>"; };
-		100000000000000000000011 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Auth/SplashView.swift; sourceTree = "<group>"; };
-		100000000000000000000012 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Auth/AuthViewModel.swift; sourceTree = "<group>"; };
-		100000000000000000000013 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Auth/LoginView.swift; sourceTree = "<group>"; };
-		100000000000000000000014 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Auth/RegisterView.swift; sourceTree = "<group>"; };
-		100000000000000000000015 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeViewModel.swift; sourceTree = "<group>"; };
-		100000000000000000000016 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeView.swift; sourceTree = "<group>"; };
-		100000000000000000000017 /* VPNViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/VPN/VPNViewModel.swift; sourceTree = "<group>"; };
-		100000000000000000000018 /* VPNView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/VPN/VPNView.swift; sourceTree = "<group>"; };
-		100000000000000000000019 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Profile/ProfileViewModel.swift; sourceTree = "<group>"; };
-		10000000000000000000001A /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Profile/ProfileView.swift; sourceTree = "<group>"; };
-		10000000000000000000001B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/RootView.swift; sourceTree = "<group>"; };
-		10000000000000000000001D /* PreviewEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/PreviewEnvironment.swift; sourceTree = "<group>"; };
+		100000000000000000000001 /* App/YeatsVPNApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/YeatsVPNApp.swift; sourceTree = "<group>"; };
+		100000000000000000000002 /* App/AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppEnvironment.swift; sourceTree = "<group>"; };
+		100000000000000000000003 /* App/AppRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppRoute.swift; sourceTree = "<group>"; };
+		100000000000000000000004 /* Networking/APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/APIClient.swift; sourceTree = "<group>"; };
+		100000000000000000000005 /* Networking/APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/APIError.swift; sourceTree = "<group>"; };
+		100000000000000000000006 /* Networking/APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/APIEndpoint.swift; sourceTree = "<group>"; };
+		100000000000000000000007 /* Networking/TokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/TokenStore.swift; sourceTree = "<group>"; };
+		100000000000000000000008 /* Models/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/Models.swift; sourceTree = "<group>"; };
+		100000000000000000000009 /* Services/AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/AuthService.swift; sourceTree = "<group>"; };
+		10000000000000000000000A /* Services/VPNService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/VPNService.swift; sourceTree = "<group>"; };
+		10000000000000000000000B /* Services/KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/KeychainService.swift; sourceTree = "<group>"; };
+		10000000000000000000000C /* Services/DeviceIDService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/DeviceIDService.swift; sourceTree = "<group>"; };
+		10000000000000000000000D /* Core/ConnectivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/ConnectivityMonitor.swift; sourceTree = "<group>"; };
+		10000000000000000000000E /* Core/FutureIntegrations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/FutureIntegrations.swift; sourceTree = "<group>"; };
+		10000000000000000000000F /* DesignSystem/DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem/DesignSystem.swift; sourceTree = "<group>"; };
+		100000000000000000000010 /* DesignSystem/Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem/Components.swift; sourceTree = "<group>"; };
+		100000000000000000000011 /* Features/Auth/SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Auth/SplashView.swift; sourceTree = "<group>"; };
+		100000000000000000000012 /* Features/Auth/AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Auth/AuthViewModel.swift; sourceTree = "<group>"; };
+		100000000000000000000013 /* Features/Auth/LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Auth/LoginView.swift; sourceTree = "<group>"; };
+		100000000000000000000014 /* Features/Auth/RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Auth/RegisterView.swift; sourceTree = "<group>"; };
+		100000000000000000000015 /* Features/Home/HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeViewModel.swift; sourceTree = "<group>"; };
+		100000000000000000000016 /* Features/Home/HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeView.swift; sourceTree = "<group>"; };
+		100000000000000000000017 /* Features/VPN/VPNViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/VPN/VPNViewModel.swift; sourceTree = "<group>"; };
+		100000000000000000000018 /* Features/VPN/VPNView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/VPN/VPNView.swift; sourceTree = "<group>"; };
+		100000000000000000000019 /* Features/Profile/ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Profile/ProfileViewModel.swift; sourceTree = "<group>"; };
+		10000000000000000000001A /* Features/Profile/ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Profile/ProfileView.swift; sourceTree = "<group>"; };
+		10000000000000000000001B /* App/RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/RootView.swift; sourceTree = "<group>"; };
+		10000000000000000000001D /* App/PreviewEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/PreviewEnvironment.swift; sourceTree = "<group>"; };
 		10000000000000000000001E /* YeatsVPN.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YeatsVPN.entitlements; sourceTree = "<group>"; };
+		10000000000000000000001F /* Core/AppleVPNManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/AppleVPNManager.swift; sourceTree = "<group>"; };
 		100000000000000000000100 /* YeatsVPN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YeatsVPN.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		100000000000000000000101 /* YeatsVPNTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YeatsVPNTests.swift; sourceTree = "<group>"; };
 		100000000000000000000102 /* YeatsVPNTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YeatsVPNTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A385BEAC2FDCCFC000F657E9 /* PacketTunnel.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PacketTunnel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A385BEB82FDCCFC000F657E9 /* Exceptions for "PacketTunnel" folder in "PacketTunnel" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A385BEAB2FDCCFC000F657E9 /* PacketTunnel */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A385BEB02FDCCFC000F657E9 /* PacketTunnel */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A385BEB82FDCCFC000F657E9 /* Exceptions for "PacketTunnel" folder in "PacketTunnel" target */,
+			);
+			path = PacketTunnel;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
-		400000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (20000000000000000000001C /* KeychainAccess in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
-		400000000000000000000101 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		400000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20000000000000000000001F /* NetworkExtension.framework in Frameworks */,
+				20000000000000000000001C /* KeychainAccess in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		400000000000000000000101 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A385BEA92FDCCFC000F657E9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A385BEAF2FDCCFC000F657E9 /* NetworkExtension.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		500000000000000000000000 = {isa = PBXGroup; children = (500000000000000000000001 /* YeatsVPN */, 500000000000000000000101 /* YeatsVPNTests */, 500000000000000000000200 /* Products */); sourceTree = "<group>"; };
-		500000000000000000000001 /* YeatsVPN */ = {isa = PBXGroup; children = (10000000000000000000001E, 100000000000000000000001, 100000000000000000000002, 100000000000000000000003, 10000000000000000000001B, 10000000000000000000001D, 10000000000000000000000D, 10000000000000000000000E, 100000000000000000000004, 100000000000000000000005, 100000000000000000000006, 100000000000000000000007, 100000000000000000000009, 10000000000000000000000A, 10000000000000000000000B, 10000000000000000000000C, 100000000000000000000008, 10000000000000000000000F, 100000000000000000000010, 100000000000000000000011, 100000000000000000000012, 100000000000000000000013, 100000000000000000000014, 100000000000000000000015, 100000000000000000000016, 100000000000000000000017, 100000000000000000000018, 100000000000000000000019, 10000000000000000000001A); path = YeatsVPN; sourceTree = "<group>"; };
-		500000000000000000000101 /* YeatsVPNTests */ = {isa = PBXGroup; children = (100000000000000000000101); path = YeatsVPNTests; sourceTree = "<group>"; };
-		500000000000000000000200 /* Products */ = {isa = PBXGroup; children = (100000000000000000000100, 100000000000000000000102); name = Products; sourceTree = "<group>"; };
+		500000000000000000000000 = {
+			isa = PBXGroup;
+			children = (
+				500000000000000000000001 /* YeatsVPN */,
+				500000000000000000000101 /* YeatsVPNTests */,
+				A385BEB02FDCCFC000F657E9 /* PacketTunnel */,
+				A385BEAD2FDCCFC000F657E9 /* Frameworks */,
+				500000000000000000000200 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		500000000000000000000001 /* YeatsVPN */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000001E /* YeatsVPN.entitlements */,
+				100000000000000000000001 /* App/YeatsVPNApp.swift */,
+				100000000000000000000002 /* App/AppEnvironment.swift */,
+				100000000000000000000003 /* App/AppRoute.swift */,
+				10000000000000000000001B /* App/RootView.swift */,
+				10000000000000000000001D /* App/PreviewEnvironment.swift */,
+				10000000000000000000000D /* Core/ConnectivityMonitor.swift */,
+				10000000000000000000001F /* Core/AppleVPNManager.swift */,
+				10000000000000000000000E /* Core/FutureIntegrations.swift */,
+				100000000000000000000004 /* Networking/APIClient.swift */,
+				100000000000000000000005 /* Networking/APIError.swift */,
+				100000000000000000000006 /* Networking/APIEndpoint.swift */,
+				100000000000000000000007 /* Networking/TokenStore.swift */,
+				100000000000000000000009 /* Services/AuthService.swift */,
+				10000000000000000000000A /* Services/VPNService.swift */,
+				10000000000000000000000B /* Services/KeychainService.swift */,
+				10000000000000000000000C /* Services/DeviceIDService.swift */,
+				100000000000000000000008 /* Models/Models.swift */,
+				10000000000000000000000F /* DesignSystem/DesignSystem.swift */,
+				100000000000000000000010 /* DesignSystem/Components.swift */,
+				100000000000000000000011 /* Features/Auth/SplashView.swift */,
+				100000000000000000000012 /* Features/Auth/AuthViewModel.swift */,
+				100000000000000000000013 /* Features/Auth/LoginView.swift */,
+				100000000000000000000014 /* Features/Auth/RegisterView.swift */,
+				100000000000000000000015 /* Features/Home/HomeViewModel.swift */,
+				100000000000000000000016 /* Features/Home/HomeView.swift */,
+				100000000000000000000017 /* Features/VPN/VPNViewModel.swift */,
+				100000000000000000000018 /* Features/VPN/VPNView.swift */,
+				100000000000000000000019 /* Features/Profile/ProfileViewModel.swift */,
+				10000000000000000000001A /* Features/Profile/ProfileView.swift */,
+			);
+			path = YeatsVPN;
+			sourceTree = "<group>";
+		};
+		500000000000000000000101 /* YeatsVPNTests */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000101 /* YeatsVPNTests.swift */,
+			);
+			path = YeatsVPNTests;
+			sourceTree = "<group>";
+		};
+		500000000000000000000200 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000100 /* YeatsVPN.app */,
+				100000000000000000000102 /* YeatsVPNTests.xctest */,
+				A385BEAC2FDCCFC000F657E9 /* PacketTunnel.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A385BEAD2FDCCFC000F657E9 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		600000000000000000000001 /* YeatsVPN */ = {isa = PBXNativeTarget; buildConfigurationList = 700000000000000000000001 /* Build configuration list for PBXNativeTarget "YeatsVPN" */; buildPhases = (800000000000000000000001 /* Sources */, 400000000000000000000001 /* Frameworks */,); buildRules = (); dependencies = (); name = YeatsVPN; packageProductDependencies = (300000000000000000000001 /* KeychainAccess */,); productName = YeatsVPN; productReference = 100000000000000000000100 /* YeatsVPN.app */; productType = "com.apple.product-type.application"; };
-		600000000000000000000101 /* YeatsVPNTests */ = {isa = PBXNativeTarget; buildConfigurationList = 700000000000000000000101 /* Build configuration list for PBXNativeTarget "YeatsVPNTests" */; buildPhases = (800000000000000000000101 /* Sources */, 400000000000000000000101 /* Frameworks */,); buildRules = (); dependencies = (900000000000000000000101 /* PBXTargetDependency */,); name = YeatsVPNTests; productName = YeatsVPNTests; productReference = 100000000000000000000102 /* YeatsVPNTests.xctest */; productType = "com.apple.product-type.bundle.unit-test"; };
+		600000000000000000000001 /* YeatsVPN */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 700000000000000000000001 /* Build configuration list for PBXNativeTarget "YeatsVPN" */;
+			buildPhases = (
+				800000000000000000000001 /* Sources */,
+				400000000000000000000001 /* Frameworks */,
+				A385BEBC2FDCCFC000F657E9 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A385BEB62FDCCFC000F657E9 /* PBXTargetDependency */,
+			);
+			name = YeatsVPN;
+			packageProductDependencies = (
+				300000000000000000000001 /* KeychainAccess */,
+			);
+			productName = YeatsVPN;
+			productReference = 100000000000000000000100 /* YeatsVPN.app */;
+			productType = "com.apple.product-type.application";
+		};
+		600000000000000000000101 /* YeatsVPNTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 700000000000000000000101 /* Build configuration list for PBXNativeTarget "YeatsVPNTests" */;
+			buildPhases = (
+				800000000000000000000101 /* Sources */,
+				400000000000000000000101 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				900000000000000000000101 /* PBXTargetDependency */,
+			);
+			name = YeatsVPNTests;
+			productName = YeatsVPNTests;
+			productReference = 100000000000000000000102 /* YeatsVPNTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A385BEAB2FDCCFC000F657E9 /* PacketTunnel */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A385BEB92FDCCFC000F657E9 /* Build configuration list for PBXNativeTarget "PacketTunnel" */;
+			buildPhases = (
+				A385BEA82FDCCFC000F657E9 /* Sources */,
+				A385BEA92FDCCFC000F657E9 /* Frameworks */,
+				A385BEAA2FDCCFC000F657E9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A385BEB02FDCCFC000F657E9 /* PacketTunnel */,
+			);
+			name = PacketTunnel;
+			packageProductDependencies = (
+			);
+			productName = PacketTunnel;
+			productReference = A385BEAC2FDCCFC000F657E9 /* PacketTunnel.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A00000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 2600; LastUpgradeCheck = 2600; TargetAttributes = {600000000000000000000001 = {CreatedOnToolsVersion = 26.0;}; 600000000000000000000101 = {CreatedOnToolsVersion = 26.0; TestTargetID = 600000000000000000000001;};};}; buildConfigurationList = 700000000000000000000000 /* Build configuration list for PBXProject "YeatsVPN" */; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = 500000000000000000000000; minimizedProjectReferenceProxies = 1; packageReferences = (300000000000000000000000 /* XCRemoteSwiftPackageReference "KeychainAccess" */,); preferredProjectObjectVersion = 77; productRefGroup = 500000000000000000000200 /* Products */; projectDirPath = ""; projectRoot = ""; targets = (600000000000000000000001 /* YeatsVPN */, 600000000000000000000101 /* YeatsVPNTests */); };
+		A00000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					600000000000000000000001 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					600000000000000000000101 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 600000000000000000000001;
+					};
+					A385BEAB2FDCCFC000F657E9 = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
+				};
+			};
+			buildConfigurationList = 700000000000000000000000 /* Build configuration list for PBXProject "YeatsVPN" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 500000000000000000000000;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				300000000000000000000000 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 500000000000000000000200 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				600000000000000000000001 /* YeatsVPN */,
+				600000000000000000000101 /* YeatsVPNTests */,
+				A385BEAB2FDCCFC000F657E9 /* PacketTunnel */,
+			);
+		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		A385BEAA2FDCCFC000F657E9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
-		800000000000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (200000000000000000000001, 200000000000000000000002, 200000000000000000000003, 200000000000000000000004, 200000000000000000000005, 200000000000000000000006, 200000000000000000000007, 200000000000000000000008, 200000000000000000000009, 20000000000000000000000A, 20000000000000000000000B, 20000000000000000000000C, 20000000000000000000000D, 20000000000000000000000E, 20000000000000000000000F, 200000000000000000000010, 200000000000000000000011, 200000000000000000000012, 200000000000000000000013, 200000000000000000000014, 200000000000000000000015, 200000000000000000000016, 200000000000000000000017, 200000000000000000000018, 200000000000000000000019, 20000000000000000000001A, 20000000000000000000001B, 20000000000000000000001D); runOnlyForDeploymentPostprocessing = 0; };
-		800000000000000000000101 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (200000000000000000000101); runOnlyForDeploymentPostprocessing = 0; };
+		800000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000001 /* App/YeatsVPNApp.swift in Sources */,
+				200000000000000000000002 /* App/AppEnvironment.swift in Sources */,
+				200000000000000000000003 /* App/AppRoute.swift in Sources */,
+				200000000000000000000004 /* Networking/APIClient.swift in Sources */,
+				200000000000000000000005 /* Networking/APIError.swift in Sources */,
+				200000000000000000000006 /* Networking/APIEndpoint.swift in Sources */,
+				200000000000000000000007 /* Networking/TokenStore.swift in Sources */,
+				200000000000000000000008 /* Models/Models.swift in Sources */,
+				200000000000000000000009 /* Services/AuthService.swift in Sources */,
+				20000000000000000000000A /* Services/VPNService.swift in Sources */,
+				20000000000000000000000B /* Services/KeychainService.swift in Sources */,
+				20000000000000000000000C /* Services/DeviceIDService.swift in Sources */,
+				20000000000000000000000D /* Core/ConnectivityMonitor.swift in Sources */,
+				20000000000000000000001E /* Core/AppleVPNManager.swift in Sources */,
+				20000000000000000000000E /* Core/FutureIntegrations.swift in Sources */,
+				20000000000000000000000F /* DesignSystem/DesignSystem.swift in Sources */,
+				200000000000000000000010 /* DesignSystem/Components.swift in Sources */,
+				200000000000000000000011 /* Features/Auth/SplashView.swift in Sources */,
+				200000000000000000000012 /* Features/Auth/AuthViewModel.swift in Sources */,
+				200000000000000000000013 /* Features/Auth/LoginView.swift in Sources */,
+				200000000000000000000014 /* Features/Auth/RegisterView.swift in Sources */,
+				200000000000000000000015 /* Features/Home/HomeViewModel.swift in Sources */,
+				200000000000000000000016 /* Features/Home/HomeView.swift in Sources */,
+				200000000000000000000017 /* Features/VPN/VPNViewModel.swift in Sources */,
+				200000000000000000000018 /* Features/VPN/VPNView.swift in Sources */,
+				200000000000000000000019 /* Features/Profile/ProfileViewModel.swift in Sources */,
+				20000000000000000000001A /* Features/Profile/ProfileView.swift in Sources */,
+				20000000000000000000001B /* App/RootView.swift in Sources */,
+				20000000000000000000001D /* App/PreviewEnvironment.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		800000000000000000000101 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000101 /* YeatsVPNTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A385BEA82FDCCFC000F657E9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		900000000000000000000101 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = 600000000000000000000001 /* YeatsVPN */; targetProxy = 900000000000000000000102 /* PBXContainerItemProxy */; };
+		900000000000000000000101 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 600000000000000000000001 /* YeatsVPN */;
+			targetProxy = 900000000000000000000102 /* PBXContainerItemProxy */;
+		};
+		A385BEB62FDCCFC000F657E9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A385BEAB2FDCCFC000F657E9 /* PacketTunnel */;
+			targetProxy = A385BEB52FDCCFC000F657E9 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
-/* Begin PBXContainerItemProxy section */
-		900000000000000000000102 /* PBXContainerItemProxy */ = {isa = PBXContainerItemProxy; containerPortal = A00000000000000000000001 /* Project object */; proxyType = 1; remoteGlobalIDString = 600000000000000000000001; remoteInfo = YeatsVPN; };
-/* End PBXContainerItemProxy section */
-
 /* Begin XCBuildConfiguration section */
-		B000000000000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = YeatsVPN/YeatsVPN.entitlements; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "Yeats VPN"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities"; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES; INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES; INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait"; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
-		B000000000000000000000002 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = YeatsVPN/YeatsVPN.entitlements; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = "Yeats VPN"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities"; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES; INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES; INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait"; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; VALIDATE_PRODUCT = YES; }; name = Release; };
-		B000000000000000000000101 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/YeatsVPN.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/YeatsVPN"; }; name = Debug; };
-		B000000000000000000000102 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/YeatsVPN.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/YeatsVPN"; }; name = Release; };
-		B000000000000000000000201 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ANALYZER_NONNULL = YES; CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE; CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; CLANG_ENABLE_OBJC_WEAK = YES; CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES; CLANG_WARN_BOOL_CONVERSION = YES; CLANG_WARN_COMMA = YES; CLANG_WARN_CONSTANT_CONVERSION = YES; CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES; CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR; CLANG_WARN_DOCUMENTATION_COMMENTS = YES; CLANG_WARN_EMPTY_BODY = YES; CLANG_WARN_ENUM_CONVERSION = YES; CLANG_WARN_INFINITE_RECURSION = YES; CLANG_WARN_INT_CONVERSION = YES; CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES; CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES; CLANG_WARN_OBJC_LITERAL_CONVERSION = YES; CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR; CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES; CLANG_WARN_RANGE_LOOP_ANALYSIS = YES; CLANG_WARN_STRICT_PROTOTYPES = YES; CLANG_WARN_SUSPICIOUS_MOVE = YES; CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE; CLANG_WARN_UNREACHABLE_CODE = YES; CLANG_WARN__DUPLICATE_METHOD_MATCH = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_STRICT_OBJC_MSGSEND = YES; ENABLE_TESTABILITY = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_DYNAMIC_NO_PIC = NO; GCC_NO_COMMON_BLOCKS = YES; GCC_OPTIMIZATION_LEVEL = 0; GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1 $(inherited)"; GCC_WARN_64_TO_32_BIT_CONVERSION = YES; GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR; GCC_WARN_UNDECLARED_SELECTOR = YES; GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE; GCC_WARN_UNUSED_FUNCTION = YES; GCC_WARN_UNUSED_VARIABLE = YES; MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE; MTL_FAST_MATH = YES; ONLY_ACTIVE_ARCH = YES; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
-		B000000000000000000000202 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ANALYZER_NONNULL = YES; CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE; CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; CLANG_ENABLE_OBJC_WEAK = YES; CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES; CLANG_WARN_BOOL_CONVERSION = YES; CLANG_WARN_COMMA = YES; CLANG_WARN_CONSTANT_CONVERSION = YES; CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES; CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR; CLANG_WARN_DOCUMENTATION_COMMENTS = YES; CLANG_WARN_EMPTY_BODY = YES; CLANG_WARN_ENUM_CONVERSION = YES; CLANG_WARN_INFINITE_RECURSION = YES; CLANG_WARN_INT_CONVERSION = YES; CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES; CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES; CLANG_WARN_OBJC_LITERAL_CONVERSION = YES; CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR; CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES; CLANG_WARN_RANGE_LOOP_ANALYSIS = YES; CLANG_WARN_STRICT_PROTOTYPES = YES; CLANG_WARN_SUSPICIOUS_MOVE = YES; CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE; CLANG_WARN_UNREACHABLE_CODE = YES; CLANG_WARN__DUPLICATE_METHOD_MATCH = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; ENABLE_NS_ASSERTIONS = NO; ENABLE_STRICT_OBJC_MSGSEND = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_NO_COMMON_BLOCKS = YES; GCC_WARN_64_TO_32_BIT_CONVERSION = YES; GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR; GCC_WARN_UNDECLARED_SELECTOR = YES; GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE; GCC_WARN_UNUSED_FUNCTION = YES; GCC_WARN_UNUSED_VARIABLE = YES; MTL_ENABLE_DEBUG_INFO = NO; MTL_FAST_MATH = YES; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; VALIDATE_PRODUCT = YES; }; name = Release; };
+		A385BEBA2FDCCFC000F657E9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = PacketTunnel/PacketTunnel.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XFL8CQ52JZ;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PacketTunnel/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PacketTunnel;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn.PacketTunnel;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A385BEBB2FDCCFC000F657E9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = PacketTunnel/PacketTunnel.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XFL8CQ52JZ;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PacketTunnel/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PacketTunnel;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn.PacketTunnel;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		B000000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = YeatsVPN/YeatsVPN.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XFL8CQ52JZ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Yeats VPN";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B000000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = YeatsVPN/YeatsVPN.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XFL8CQ52JZ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Yeats VPN";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		B000000000000000000000101 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/YeatsVPN.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/YeatsVPN";
+			};
+			name = Debug;
+		};
+		B000000000000000000000102 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/YeatsVPN.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/YeatsVPN";
+			};
+			name = Release;
+		};
+		B000000000000000000000201 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		B000000000000000000000202 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		700000000000000000000000 /* Build configuration list for PBXProject "YeatsVPN" */ = {isa = XCConfigurationList; buildConfigurations = (B000000000000000000000201, B000000000000000000000202); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-		700000000000000000000001 /* Build configuration list for PBXNativeTarget "YeatsVPN" */ = {isa = XCConfigurationList; buildConfigurations = (B000000000000000000000001, B000000000000000000000002); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-		700000000000000000000101 /* Build configuration list for PBXNativeTarget "YeatsVPNTests" */ = {isa = XCConfigurationList; buildConfigurations = (B000000000000000000000101, B000000000000000000000102); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		700000000000000000000000 /* Build configuration list for PBXProject "YeatsVPN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B000000000000000000000201 /* Debug */,
+				B000000000000000000000202 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		700000000000000000000001 /* Build configuration list for PBXNativeTarget "YeatsVPN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B000000000000000000000001 /* Debug */,
+				B000000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		700000000000000000000101 /* Build configuration list for PBXNativeTarget "YeatsVPNTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B000000000000000000000101 /* Debug */,
+				B000000000000000000000102 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A385BEB92FDCCFC000F657E9 /* Build configuration list for PBXNativeTarget "PacketTunnel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A385BEBA2FDCCFC000F657E9 /* Debug */,
+				A385BEBB2FDCCFC000F657E9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		300000000000000000000000 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess.git"; requirement = {kind = upToNextMajorVersion; minimumVersion = 4.2.2;}; };
+		300000000000000000000000 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.2.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		300000000000000000000001 /* KeychainAccess */ = {isa = XCSwiftPackageProductDependency; package = 300000000000000000000000 /* XCRemoteSwiftPackageReference "KeychainAccess" */; productName = KeychainAccess; };
+		300000000000000000000001 /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 300000000000000000000000 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
+		};
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A00000000000000000000001 /* Project object */;

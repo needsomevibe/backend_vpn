@@ -48,7 +48,7 @@ final class AppEnvironment: ObservableObject {
             connectivity: ConnectivityMonitor(),
             storeKit: PlaceholderStoreKitManager(),
             push: PlaceholderPushNotificationManager(),
-            networkExtension: PlaceholderNetworkExtensionManager()
+            networkExtension: AppleVPNManager()
         )
     }
 

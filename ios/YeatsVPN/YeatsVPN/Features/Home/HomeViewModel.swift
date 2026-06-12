@@ -38,12 +38,18 @@ final class HomeViewModel: ObservableObject {
 
     func connectTapped() async {
         guard let url = profile?.subscriptionUrl else { return }
-        connectionState = .connecting
-        do {
-            try await environment.networkExtension.connect(subscriptionURL: url)
+        switch connectionState {
+        case .connected, .connecting:
+            await environment.networkExtension.disconnect()
             connectionState = await environment.networkExtension.currentState()
-        } catch {
-            connectionState = .unavailable(error.localizedDescription)
+        case .disconnected, .unavailable:
+            connectionState = .connecting
+            do {
+                try await environment.networkExtension.connect(subscriptionURL: url)
+                connectionState = await environment.networkExtension.currentState()
+            } catch {
+                connectionState = .unavailable(error.localizedDescription)
+            }
         }
     }
 }
