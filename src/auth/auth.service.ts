@@ -1,0 +1,233 @@
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { SubscriptionStatus } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
+import { PrismaService } from '../prisma/prisma.service';
+import { RemnawaveService } from '../remnawave/remnawave.service';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+
+const ACCESS_TTL = '15m';
+const REFRESH_TTL_DAYS = 30;
+const BYTES_IN_GB = 1024 ** 3;
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
+    private readonly config: ConfigService,
+    private readonly remnawave: RemnawaveService,
+  ) {}
+
+  async register(dto: RegisterDto) {
+    const email = dto.email.toLowerCase();
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      throw new ConflictException('Email is already registered');
+    }
+
+    const plan = await this.prisma.plan.findFirst({
+      where: { isDefault: true, isActive: true },
+    });
+    if (!plan) {
+      throw new ConflictException('Default plan is not configured');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + plan.durationDays * 86_400_000);
+    const trafficLimitBytes = BigInt(plan.trafficLimitGb) * BigInt(BYTES_IN_GB);
+
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        devices: {
+          create: {
+            deviceId: dto.deviceId,
+            platform: 'ios',
+            name: dto.deviceName,
+          },
+        },
+      },
+    });
+
+    try {
+      const username = this.buildVpnUsername(user.id, email);
+      const remote = await this.remnawave.createUser({
+        username,
+        trafficLimitBytes: trafficLimitBytes.toString(),
+        expiresAt,
+      });
+
+      await this.prisma.$transaction([
+        this.prisma.vpnAccount.create({
+          data: {
+            userId: user.id,
+            remnawaveUuid: remote.uuid,
+            remnawaveShortUuid: remote.shortUuid,
+            username,
+            status: 'ACTIVE',
+            trafficLimitBytes,
+            expiresAt,
+            subscriptionUrl: remote.subscriptionUrl,
+          },
+        }),
+        this.prisma.subscription.create({
+          data: {
+            userId: user.id,
+            planId: plan.id,
+            status: SubscriptionStatus.TRIALING,
+            startedAt: now,
+            expiresAt,
+            provider: 'internal',
+          },
+        }),
+      ]);
+    } catch (error) {
+      await this.prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
+      throw error;
+    }
+
+    return this.buildAuthResponse(user.id, email, dto.deviceId);
+  }
+
+  async login(dto: LoginDto) {
+    const email = dto.email.toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!passwordMatches) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (dto.deviceId) {
+      await this.prisma.device.upsert({
+        where: { userId_deviceId: { userId: user.id, deviceId: dto.deviceId } },
+        create: { userId: user.id, deviceId: dto.deviceId, platform: 'ios' },
+        update: { lastSeenAt: new Date() },
+      });
+    }
+
+    return this.buildAuthResponse(user.id, user.email, dto.deviceId);
+  }
+
+  async refresh(refreshToken: string) {
+    const payload = await this.verifyRefreshToken(refreshToken);
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { id: payload.jti },
+      include: { user: true },
+    });
+    if (!stored || stored.revokedAt || stored.expiresAt <= new Date()) {
+      throw new UnauthorizedException('Refresh token is invalid');
+    }
+    const matches = await bcrypt.compare(refreshToken, stored.tokenHash);
+    if (!matches || stored.user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Refresh token is invalid');
+    }
+
+    await this.prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { revokedAt: new Date() },
+    });
+    return this.buildAuthResponse(stored.user.id, stored.user.email, stored.deviceId ?? undefined);
+  }
+
+  async logout(refreshToken: string) {
+    try {
+      const payload = await this.verifyRefreshToken(refreshToken);
+      await this.prisma.refreshToken.updateMany({
+        where: { id: payload.jti, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    } catch {
+      return { success: true };
+    }
+    return { success: true };
+  }
+
+  private async buildAuthResponse(userId: string, email: string, deviceId?: string) {
+    const refreshTokenId = randomUUID();
+    const refreshExpiresAt = new Date(Date.now() + REFRESH_TTL_DAYS * 86_400_000);
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwt.signAsync(
+        { sub: userId, email },
+        {
+          secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
+          expiresIn: ACCESS_TTL,
+        },
+      ),
+      this.jwt.signAsync(
+        { sub: userId, email, jti: refreshTokenId },
+        {
+          secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
+          expiresIn: `${REFRESH_TTL_DAYS}d`,
+        },
+      ),
+    ]);
+
+    await this.prisma.refreshToken.create({
+      data: {
+        id: refreshTokenId,
+        userId,
+        tokenHash: await bcrypt.hash(refreshToken, 12),
+        deviceId,
+        expiresAt: refreshExpiresAt,
+      },
+    });
+
+    const profile = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        status: true,
+        createdAt: true,
+        vpnAccount: true,
+        subscriptions: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: { plan: true },
+        },
+      },
+    });
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: profile.id,
+        email: profile.email,
+        status: profile.status,
+        createdAt: profile.createdAt,
+        vpn: profile.vpnAccount,
+        subscription: profile.subscriptions[0] ?? null,
+      },
+    };
+  }
+
+  private async verifyRefreshToken(refreshToken: string) {
+    try {
+      return await this.jwt.verifyAsync<{ sub: string; email: string; jti: string }>(
+        refreshToken,
+        { secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET') },
+      );
+    } catch {
+      throw new UnauthorizedException('Refresh token is invalid');
+    }
+  }
+
+  private buildVpnUsername(userId: string, email: string) {
+    const prefix = email.split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 20);
+    return `${prefix || 'user'}_${userId.slice(0, 8)}`;
+  }
+}

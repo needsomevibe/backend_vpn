@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vpn-backend-postgres
+    environment:
+      POSTGRES_USER: vpn
+      POSTGRES_PASSWORD: vpn
+      POSTGRES_DB: vpn_backend
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vpn -d vpn_backend"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: vpn-backend-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres-data:
