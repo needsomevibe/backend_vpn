@@ -31,6 +31,8 @@ cp .env.example .env
 docker compose up --build
 ```
 
+The Docker container runs migrations and seeds default plans during startup.
+
 For Docker, `DATABASE_URL` must point at the Compose service name:
 
 ```env
