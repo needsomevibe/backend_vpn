@@ -18,6 +18,7 @@ export class RemnawaveService {
   private readonly baseUrl: string;
   private readonly token: string;
   private readonly subscriptionBaseUrl: string;
+  private readonly internalSquadUuid: string;
 
   constructor(
     private readonly http: HttpService,
@@ -25,6 +26,7 @@ export class RemnawaveService {
   ) {
     this.baseUrl = config.getOrThrow<string>('REMNAWAVE_BASE_URL').replace(/\/$/, '');
     this.token = config.getOrThrow<string>('REMNAWAVE_API_TOKEN');
+    this.internalSquadUuid = config.getOrThrow<string>('REMNAWAVE_INTERNAL_SQUAD_UUID');
     this.subscriptionBaseUrl = config
       .getOrThrow<string>('SUBSCRIPTION_BASE_URL')
       .replace(/\/$/, '');
@@ -37,11 +39,10 @@ export class RemnawaveService {
       data: {
         username: input.username,
         status: 'ACTIVE',
-        trafficLimitBytes: input.trafficLimitBytes,
+        trafficLimitBytes: Number(input.trafficLimitBytes),
         trafficLimitStrategy: 'NO_RESET',
         expireAt: input.expiresAt.toISOString(),
-        expiresAt: input.expiresAt.toISOString(),
-        activeInternalSquads: ['default'],
+        activeInternalSquads: [this.internalSquadUuid],
       },
     });
     return this.normalizeUser(response, input.username);
@@ -136,8 +137,12 @@ export class RemnawaveService {
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError;
+      const responseData =
+        axiosError.response?.data && typeof axiosError.response.data === 'object'
+          ? JSON.stringify(axiosError.response.data)
+          : axiosError.response?.data;
       this.logger.error(
-        `Remnawave request failed: ${config.method} ${config.url} ${axiosError.response?.status ?? ''}`,
+        `Remnawave request failed: ${config.method} ${config.url} ${axiosError.response?.status ?? ''} ${responseData ?? ''}`,
       );
       throw new ServiceUnavailableException('Remnawave API is unavailable');
     }
