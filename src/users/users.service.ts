@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { jsonSafe } from '../common/serializers/json-safe';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -34,6 +35,10 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return { ...user, subscription: user.subscriptions[0] ?? null, subscriptions: undefined };
+    return jsonSafe({
+      ...user,
+      subscription: user.subscriptions[0] ?? null,
+      subscriptions: undefined,
+    });
   }
 }

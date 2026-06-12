@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RemnawaveService } from '../remnawave/remnawave.service';
+import { jsonSafe } from '../common/serializers/json-safe';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -201,7 +202,7 @@ export class AuthService {
       },
     });
 
-    return {
+    return jsonSafe({
       accessToken,
       refreshToken,
       user: {
@@ -212,7 +213,7 @@ export class AuthService {
         vpn: profile.vpnAccount,
         subscription: profile.subscriptions[0] ?? null,
       },
-    };
+    });
   }
 
   private async verifyRefreshToken(refreshToken: string) {

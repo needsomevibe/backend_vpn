@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SubscriptionStatus, VpnAccountStatus } from '@prisma/client';
+import { jsonSafe } from '../common/serializers/json-safe';
 import { PrismaService } from '../prisma/prisma.service';
 import { RemnawaveService } from '../remnawave/remnawave.service';
 
@@ -57,19 +58,21 @@ export class VpnService {
     const { vpn } = await this.getVpnContext(userId, true);
     await this.ensureSubscriptionAllowsVpn(userId);
     await this.remnawave.enableUser(vpn.remnawaveUuid);
-    return this.prisma.vpnAccount.update({
+    const updated = await this.prisma.vpnAccount.update({
       where: { id: vpn.id },
       data: { status: VpnAccountStatus.ACTIVE },
     });
+    return jsonSafe(updated);
   }
 
   async disable(userId: string) {
     const { vpn } = await this.getVpnContext(userId, true);
     await this.remnawave.disableUser(vpn.remnawaveUuid);
-    return this.prisma.vpnAccount.update({
+    const updated = await this.prisma.vpnAccount.update({
       where: { id: vpn.id },
       data: { status: VpnAccountStatus.DISABLED },
     });
+    return jsonSafe(updated);
   }
 
   async resetTraffic(userId: string) {
