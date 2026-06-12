@@ -12,6 +12,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         subscriptionURL = optionURL ?? providerURL
 
         guard let subscriptionURL, URL(string: subscriptionURL) != nil else {
+            logger.error("Missing or invalid subscription URL.")
             completionHandler(PacketTunnelError.missingSubscriptionURL)
             return
         }
@@ -49,6 +50,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         guard let completionHandler else {
             return
         }
+        logger.info("Received app message.")
         let status = PacketTunnelStatus(
             isRunning: subscriptionURL != nil,
             subscriptionURL: subscriptionURL

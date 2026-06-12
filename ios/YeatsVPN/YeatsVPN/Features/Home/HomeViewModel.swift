@@ -7,12 +7,14 @@ final class HomeViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var connectionState: VPNConnectionState = .disconnected
+    @Published var logs: [DebugLogEntry] = []
 
     private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
         self.environment = environment
         self.profile = environment.vpnProfile
+        self.logs = environment.debugLog.entries
     }
 
     var progress: Double {
@@ -31,8 +33,11 @@ final class HomeViewModel: ObservableObject {
             self.usage = try await usage
             environment.vpnProfile = self.profile
             connectionState = await environment.networkExtension.currentState()
+            logs = environment.debugLog.entries
         } catch {
             errorMessage = error.localizedDescription
+            environment.debugLog.error("Home refresh failed: \(error.localizedDescription)")
+            logs = environment.debugLog.entries
         }
     }
 
@@ -42,14 +47,23 @@ final class HomeViewModel: ObservableObject {
         case .connected, .connecting:
             await environment.networkExtension.disconnect()
             connectionState = await environment.networkExtension.currentState()
+            logs = environment.debugLog.entries
         case .disconnected, .unavailable:
             connectionState = .connecting
             do {
                 try await environment.networkExtension.connect(subscriptionURL: url)
                 connectionState = await environment.networkExtension.currentState()
+                logs = environment.debugLog.entries
             } catch {
                 connectionState = .unavailable(error.localizedDescription)
+                environment.debugLog.error("Connect failed: \(error.localizedDescription)")
+                logs = environment.debugLog.entries
             }
         }
+    }
+
+    func clearLogs() {
+        environment.debugLog.clear()
+        logs = []
     }
 }

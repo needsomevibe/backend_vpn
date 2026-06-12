@@ -11,6 +11,7 @@ struct HomeView: View {
                     connectionCard
                     usageCard
                     detailsCard
+                    debugLogCard
                     if let error = viewModel.errorMessage {
                         ErrorBanner(message: error)
                     }
@@ -96,6 +97,37 @@ struct HomeView: View {
                     .foregroundStyle(.secondary)
             }
             .font(.headline)
+        }
+    }
+
+    private var debugLogCard: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("Connection logs", systemImage: "list.bullet.rectangle")
+                        .font(.headline)
+                    Spacer()
+                    Button("Clear") {
+                        viewModel.clearLogs()
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(DS.blue)
+                }
+                if viewModel.logs.isEmpty {
+                    Text("No connection events yet.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(viewModel.logs.suffix(12)) { entry in
+                            Text(entry.display)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(entry.level == "error" ? .red : .secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                }
+            }
         }
     }
 

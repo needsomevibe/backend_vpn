@@ -10,6 +10,7 @@ extension AppEnvironment {
             authService: auth,
             vpnService: vpn,
             tokenStore: tokenStore,
+            debugLog: DebugLogStore(),
             connectivity: PreviewConnectivityMonitor(),
             storeKit: PlaceholderStoreKitManager(),
             push: PlaceholderPushNotificationManager(),

@@ -37,6 +37,7 @@
 		20000000000000000000001C /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 300000000000000000000001 /* KeychainAccess */; };
 		20000000000000000000001D /* App/PreviewEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001D /* App/PreviewEnvironment.swift */; };
 		20000000000000000000001E /* Core/AppleVPNManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001F /* Core/AppleVPNManager.swift */; };
+		200000000000000000000020 /* Core/DebugLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000020 /* Core/DebugLogStore.swift */; };
 		20000000000000000000001F /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */; };
 		200000000000000000000101 /* YeatsVPNTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000101 /* YeatsVPNTests.swift */; };
 		A385BEAF2FDCCFC000F657E9 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */; };
@@ -105,6 +106,7 @@
 		10000000000000000000001D /* App/PreviewEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/PreviewEnvironment.swift; sourceTree = "<group>"; };
 		10000000000000000000001E /* YeatsVPN.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YeatsVPN.entitlements; sourceTree = "<group>"; };
 		10000000000000000000001F /* Core/AppleVPNManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/AppleVPNManager.swift; sourceTree = "<group>"; };
+		100000000000000000000020 /* Core/DebugLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DebugLogStore.swift; sourceTree = "<group>"; };
 		100000000000000000000100 /* YeatsVPN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YeatsVPN.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		100000000000000000000101 /* YeatsVPNTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YeatsVPNTests.swift; sourceTree = "<group>"; };
 		100000000000000000000102 /* YeatsVPNTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YeatsVPNTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -183,6 +185,7 @@
 				10000000000000000000001D /* App/PreviewEnvironment.swift */,
 				10000000000000000000000D /* Core/ConnectivityMonitor.swift */,
 				10000000000000000000001F /* Core/AppleVPNManager.swift */,
+				100000000000000000000020 /* Core/DebugLogStore.swift */,
 				10000000000000000000000E /* Core/FutureIntegrations.swift */,
 				100000000000000000000004 /* Networking/APIClient.swift */,
 				100000000000000000000005 /* Networking/APIError.swift */,
@@ -373,6 +376,7 @@
 				20000000000000000000000C /* Services/DeviceIDService.swift in Sources */,
 				20000000000000000000000D /* Core/ConnectivityMonitor.swift in Sources */,
 				20000000000000000000001E /* Core/AppleVPNManager.swift in Sources */,
+				200000000000000000000020 /* Core/DebugLogStore.swift in Sources */,
 				20000000000000000000000E /* Core/FutureIntegrations.swift in Sources */,
 				20000000000000000000000F /* DesignSystem/DesignSystem.swift in Sources */,
 				200000000000000000000010 /* DesignSystem/Components.swift in Sources */,
@@ -551,6 +555,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = XFL8CQ52JZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn.tests;
@@ -568,6 +573,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = XFL8CQ52JZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				PRODUCT_BUNDLE_IDENTIFIER = uz.yeats.vpn.tests;
