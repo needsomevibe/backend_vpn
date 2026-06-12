@@ -78,7 +78,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
     }
 
     private func save(_ manager: NETunnelProviderManager) async throws {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             manager.saveToPreferences { error in
                 if let error {
                     continuation.resume(throwing: error)
@@ -90,7 +90,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
     }
 
     private func loadFromPreferences(_ manager: NETunnelProviderManager) async throws {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             manager.loadFromPreferences { error in
                 if let error {
                     continuation.resume(throwing: error)
