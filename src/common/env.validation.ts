@@ -8,6 +8,7 @@ const required = [
   'REMNAWAVE_API_TOKEN',
   'REMNAWAVE_INTERNAL_SQUAD_UUID',
   'SUBSCRIPTION_BASE_URL',
+  'APPLE_BUNDLE_ID',
 ];
 
 export function validateEnv(config: Env) {

@@ -38,7 +38,9 @@ enum PaymentStatus {
 model User {
   id             String         @id @default(uuid())
   email          String         @unique
-  passwordHash   String
+  passwordHash   String?
+  appleSubject   String?        @unique
+  authProvider   String         @default("email")
   status         UserStatus     @default(ACTIVE)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -49,6 +51,7 @@ model User {
   refreshTokens  RefreshToken[]
 
   @@index([status])
+  @@index([authProvider])
 }
 
 model VpnAccount {

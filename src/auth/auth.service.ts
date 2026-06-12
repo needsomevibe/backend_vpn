@@ -11,6 +11,8 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RemnawaveService } from '../remnawave/remnawave.service';
 import { jsonSafe } from '../common/serializers/json-safe';
+import { AppleTokenService } from './apple-token.service';
+import { AppleLoginDto } from './dto/apple-login.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -25,6 +27,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly remnawave: RemnawaveService,
+    private readonly appleTokenService: AppleTokenService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -42,9 +45,6 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + plan.durationDays * 86_400_000);
-    const trafficLimitBytes = BigInt(plan.trafficLimitGb) * BigInt(BYTES_IN_GB);
 
     const user = await this.prisma.user.create({
       data: {
@@ -61,37 +61,7 @@ export class AuthService {
     });
 
     try {
-      const username = this.buildVpnUsername(user.id, email);
-      const remote = await this.remnawave.createUser({
-        username,
-        trafficLimitBytes: trafficLimitBytes.toString(),
-        expiresAt,
-      });
-
-      await this.prisma.$transaction([
-        this.prisma.vpnAccount.create({
-          data: {
-            userId: user.id,
-            remnawaveUuid: remote.uuid,
-            remnawaveShortUuid: remote.shortUuid,
-            username,
-            status: 'ACTIVE',
-            trafficLimitBytes,
-            expiresAt,
-            subscriptionUrl: remote.subscriptionUrl,
-          },
-        }),
-        this.prisma.subscription.create({
-          data: {
-            userId: user.id,
-            planId: plan.id,
-            status: SubscriptionStatus.TRIALING,
-            startedAt: now,
-            expiresAt,
-            provider: 'internal',
-          },
-        }),
-      ]);
+      await this.provisionVpnForUser(user.id, email, plan);
     } catch (error) {
       await this.prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
       throw error;
@@ -103,7 +73,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     const email = dto.email.toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user || user.status !== 'ACTIVE') {
+    if (!user || user.status !== 'ACTIVE' || !user.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
     }
     const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
@@ -118,6 +88,68 @@ export class AuthService {
         update: { lastSeenAt: new Date() },
       });
     }
+
+    return this.buildAuthResponse(user.id, user.email, dto.deviceId);
+  }
+
+  async loginWithApple(dto: AppleLoginDto) {
+    const identity = await this.appleTokenService.verifyIdentityToken(dto.identityToken);
+    let user = await this.prisma.user.findUnique({
+      where: { appleSubject: identity.subject },
+    });
+
+    if (!user) {
+      const existingByEmail = await this.prisma.user.findUnique({
+        where: { email: identity.email },
+      });
+      if (existingByEmail) {
+        user = await this.prisma.user.update({
+          where: { id: existingByEmail.id },
+          data: {
+            appleSubject: identity.subject,
+            authProvider: existingByEmail.passwordHash ? 'email_apple' : 'apple',
+          },
+        });
+      }
+    }
+
+    if (!user) {
+      const plan = await this.prisma.plan.findFirst({
+        where: { isDefault: true, isActive: true },
+      });
+      if (!plan) {
+        throw new ConflictException('Default plan is not configured');
+      }
+      user = await this.prisma.user.create({
+        data: {
+          email: identity.email,
+          passwordHash: null,
+          appleSubject: identity.subject,
+          authProvider: 'apple',
+          devices: {
+            create: {
+              deviceId: dto.deviceId,
+              platform: 'ios',
+              name: dto.fullName,
+            },
+          },
+        },
+      });
+      try {
+        await this.provisionVpnForUser(user.id, user.email, plan);
+      } catch (error) {
+        await this.prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
+        throw error;
+      }
+    } else if (user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('User is not active');
+    }
+
+    await this.prisma.device.upsert({
+      where: { userId_deviceId: { userId: user.id, deviceId: dto.deviceId } },
+      create: { userId: user.id, deviceId: dto.deviceId, platform: 'ios', name: dto.fullName },
+      update: { lastSeenAt: new Date(), name: dto.fullName },
+    });
 
     return this.buildAuthResponse(user.id, user.email, dto.deviceId);
   }
@@ -230,5 +262,46 @@ export class AuthService {
   private buildVpnUsername(userId: string, email: string) {
     const prefix = email.split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 20);
     return `${prefix || 'user'}_${userId.slice(0, 8)}`;
+  }
+
+  private async provisionVpnForUser(
+    userId: string,
+    email: string,
+    plan: { id: string; trafficLimitGb: number; durationDays: number },
+  ) {
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + plan.durationDays * 86_400_000);
+    const trafficLimitBytes = BigInt(plan.trafficLimitGb) * BigInt(BYTES_IN_GB);
+    const username = this.buildVpnUsername(userId, email);
+    const remote = await this.remnawave.createUser({
+      username,
+      trafficLimitBytes: trafficLimitBytes.toString(),
+      expiresAt,
+    });
+
+    await this.prisma.$transaction([
+      this.prisma.vpnAccount.create({
+        data: {
+          userId,
+          remnawaveUuid: remote.uuid,
+          remnawaveShortUuid: remote.shortUuid,
+          username,
+          status: 'ACTIVE',
+          trafficLimitBytes,
+          expiresAt,
+          subscriptionUrl: remote.subscriptionUrl,
+        },
+      }),
+      this.prisma.subscription.create({
+        data: {
+          userId,
+          planId: plan.id,
+          status: SubscriptionStatus.TRIALING,
+          startedAt: now,
+          expiresAt,
+          provider: 'internal',
+        },
+      }),
+    ]);
   }
 }

@@ -55,6 +55,7 @@ REMNAWAVE_BASE_URL=https://panel.yeats.uz
 REMNAWAVE_API_TOKEN=
 REMNAWAVE_INTERNAL_SQUAD_UUID=
 SUBSCRIPTION_BASE_URL=https://sub.yeats.uz
+APPLE_BUNDLE_ID=uz.yeats.vpn
 ```
 
 Never send `REMNAWAVE_API_TOKEN` to the iOS app. All Remnawave calls are wrapped by `RemnawaveService`.
@@ -63,6 +64,7 @@ Never send `REMNAWAVE_API_TOKEN` to the iOS app. All Remnawave calls are wrapped
 
 - `POST /auth/register`
 - `POST /auth/login`
+- `POST /auth/apple`
 - `POST /auth/refresh`
 - `POST /auth/logout`
 - `GET /me`

@@ -5,3 +5,5 @@ coverage
 .env.local
 npm-debug.log*
 docker-data
+
+.DS_Store

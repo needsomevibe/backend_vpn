@@ -2,6 +2,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
+import { AppleTokenService } from '../src/auth/apple-token.service';
 import { AuthService } from '../src/auth/auth.service';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { RemnawaveService } from '../src/remnawave/remnawave.service';
@@ -11,6 +12,7 @@ describe('AuthService', () => {
     user: {
       findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
       delete: jest.fn(),
       findUniqueOrThrow: jest.fn(),
     },
@@ -23,6 +25,9 @@ describe('AuthService', () => {
     subscription: {
       create: jest.fn(),
     },
+    device: {
+      upsert: jest.fn(),
+    },
     refreshToken: {
       create: jest.fn(),
     },
@@ -31,6 +36,9 @@ describe('AuthService', () => {
 
   const remnawave = {
     createUser: jest.fn(),
+  };
+  const appleTokenService = {
+    verifyIdentityToken: jest.fn(),
   };
 
   beforeEach(() => {
@@ -51,6 +59,7 @@ describe('AuthService', () => {
       subscriptionUrl: 'https://sub.yeats.uz/short',
     });
     prisma.$transaction.mockResolvedValue([]);
+    prisma.device.upsert.mockResolvedValue({});
     prisma.refreshToken.create.mockResolvedValue({});
     prisma.user.findUniqueOrThrow.mockResolvedValue({
       id: 'user-12345678',
@@ -69,6 +78,7 @@ describe('AuthService', () => {
         JwtService,
         { provide: PrismaService, useValue: prisma },
         { provide: RemnawaveService, useValue: remnawave },
+        { provide: AppleTokenService, useValue: appleTokenService },
         { provide: ConfigService, useValue: { getOrThrow: jest.fn() } },
       ],
     })
@@ -101,5 +111,65 @@ describe('AuthService', () => {
     });
     const tokenHash = prisma.refreshToken.create.mock.calls[0][0].data.tokenHash;
     await expect(bcrypt.compare(result.refreshToken, tokenHash)).resolves.toBe(true);
+  });
+
+  it('signs in with Apple and provisions a VPN account for a new user', async () => {
+    appleTokenService.verifyIdentityToken.mockResolvedValue({
+      subject: 'apple-subject',
+      email: 'apple@example.com',
+      emailVerified: true,
+    });
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({
+      id: 'apple-user-12345678',
+      email: 'apple@example.com',
+      status: 'ACTIVE',
+      passwordHash: null,
+    });
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      id: 'apple-user-12345678',
+      email: 'apple@example.com',
+      status: 'ACTIVE',
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      vpnAccount: null,
+      subscriptions: [],
+    });
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AuthService,
+        JwtService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: RemnawaveService, useValue: remnawave },
+        { provide: AppleTokenService, useValue: appleTokenService },
+        { provide: ConfigService, useValue: { getOrThrow: jest.fn() } },
+      ],
+    })
+      .overrideProvider(ConfigService)
+      .useValue({
+        getOrThrow: (key: string) =>
+          key === 'JWT_ACCESS_SECRET' ? 'access-secret' : 'refresh-secret',
+      })
+      .compile();
+
+    const service = moduleRef.get(AuthService);
+    const result = await service.loginWithApple({
+      identityToken: 'identity-token',
+      deviceId: 'device-apple',
+      fullName: 'Apple User',
+    });
+
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        email: 'apple@example.com',
+        passwordHash: null,
+        appleSubject: 'apple-subject',
+        authProvider: 'apple',
+      }),
+    });
+    expect(remnawave.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({ username: 'apple_apple-us' }),
+    );
+    expect(result.accessToken).toEqual(expect.any(String));
   });
 });
