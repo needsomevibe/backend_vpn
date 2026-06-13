@@ -36,14 +36,16 @@
 		20000000000000000000001B /* App/RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001B /* App/RootView.swift */; };
 		20000000000000000000001C /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 300000000000000000000001 /* KeychainAccess */; };
 		20000000000000000000001D /* App/PreviewEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001D /* App/PreviewEnvironment.swift */; };
+		20000000000000000000001E /* Core/AppleVPNManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001F /* Core/AppleVPNManager.swift */; };
+		20000000000000000000001F /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */; };
+		200000000000000000000020 /* Core/DebugLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000020 /* Core/DebugLogStore.swift */; };
 		200000000000000000000021 /* Services/SubscriptionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000021 /* Services/SubscriptionParser.swift */; };
 		200000000000000000000022 /* Features/Settings/SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000022 /* Features/Settings/SettingsView.swift */; };
-		20000000000000000000001E /* Core/AppleVPNManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000001F /* Core/AppleVPNManager.swift */; };
-		200000000000000000000020 /* Core/DebugLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000020 /* Core/DebugLogStore.swift */; };
-		20000000000000000000001F /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */; };
 		200000000000000000000101 /* YeatsVPNTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000101 /* YeatsVPNTests.swift */; };
 		A385BEAF2FDCCFC000F657E9 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */; };
 		A385BEB72FDCCFC000F657E9 /* PacketTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A385BEAC2FDCCFC000F657E9 /* PacketTunnel.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A385BF0E2FDCEAF700F657E9 /* Libbox.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A385BF0D2FDCEAF700F657E9 /* Libbox.xcframework */; };
+		A385BF0F2FDCEAF700F657E9 /* Libbox.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A385BF0D2FDCEAF700F657E9 /* Libbox.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,6 +75,17 @@
 				A385BEB72FDCCFC000F657E9 /* PacketTunnel.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A385BF102FDCEAF700F657E9 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				A385BF0F2FDCEAF700F657E9 /* Libbox.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -116,6 +129,7 @@
 		100000000000000000000102 /* YeatsVPNTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YeatsVPNTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A385BEAC2FDCCFC000F657E9 /* PacketTunnel.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PacketTunnel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
+		A385BF0D2FDCEAF700F657E9 /* Libbox.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Libbox.xcframework; path = YeatsVPN/Libbox.xcframework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -161,6 +175,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A385BEAF2FDCCFC000F657E9 /* NetworkExtension.framework in Frameworks */,
+				A385BF0E2FDCEAF700F657E9 /* Libbox.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -239,6 +254,7 @@
 		A385BEAD2FDCCFC000F657E9 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A385BF0D2FDCEAF700F657E9 /* Libbox.xcframework */,
 				A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */,
 			);
 			name = Frameworks;
@@ -292,6 +308,7 @@
 				A385BEA82FDCCFC000F657E9 /* Sources */,
 				A385BEA92FDCCFC000F657E9 /* Frameworks */,
 				A385BEAA2FDCCFC000F657E9 /* Resources */,
+				A385BF102FDCEAF700F657E9 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);

@@ -76,7 +76,7 @@ final class APIClient: @unchecked Sendable {
         }
         guard 200..<300 ~= http.statusCode else {
             let envelope = try? decoder.decode(ServerErrorEnvelope.self, from: data)
-            let message = envelope?.error.message ?? envelope?.message ?? "Request failed (\(http.statusCode))."
+            let message = envelope?.error?.message ?? envelope?.message ?? "Request failed (\(http.statusCode))."
             if http.statusCode == 401 { throw APIError.unauthorized }
             throw APIError.server(status: http.statusCode, message: message)
         }
