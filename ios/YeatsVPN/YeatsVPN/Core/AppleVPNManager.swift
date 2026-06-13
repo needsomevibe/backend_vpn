@@ -162,14 +162,20 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
 
     @MainActor
     private func logInfo(_ message: String) {
-        debugLog?.info(message)
-        logger.info("\(message, privacy: .public)")
+        if let debugLog {
+            debugLog.info(message)
+        } else {
+            logger.info("\(message, privacy: .public)")
+        }
     }
 
     @MainActor
     private func logError(_ message: String) {
-        debugLog?.error(message)
-        logger.error("\(message, privacy: .public)")
+        if let debugLog {
+            debugLog.error(message)
+        } else {
+            logger.error("\(message, privacy: .public)")
+        }
     }
 }
 
