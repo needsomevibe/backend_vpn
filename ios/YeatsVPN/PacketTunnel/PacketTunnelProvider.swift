@@ -36,28 +36,11 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
             let config = try SingBoxConfigBuilder.build(from: rawSubscription)
             logger.info("Generated sing-box config, bytes: \(config.utf8.count)")
 
-            // 1. Setup Network Settings
-            let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: "172.19.0.1")
-
-            let ipv4 = NEIPv4Settings(addresses: ["172.19.0.1"], subnetMasks: ["255.255.255.252"])
-            ipv4.includedRoutes = [NEIPv4Route.default()]
-            settings.ipv4Settings = ipv4
-
-            let ipv6 = NEIPv6Settings(addresses: ["fdfe:dcba:9876::1"], networkPrefixLengths: [126])
-            ipv6.includedRoutes = [NEIPv6Route.default()]
-            settings.ipv6Settings = ipv6
-
-            settings.dnsSettings = NEDNSSettings(servers: ["1.1.1.1", "8.8.8.8"])
-            settings.mtu = 1500 as NSNumber
-
-            try await setTunnelNetworkSettings(settings)
-            self.networkSettings = settings
-
-            // 2. Start Sing-Box
             let box = LibboxNewCommandServer(self as LibboxCommandServerHandlerProtocol, self as LibboxPlatformInterfaceProtocol, nil)
             guard let box else {
                 throw PacketTunnelError.libboxUnavailable
             }
+            logger.info("Starting Libbox service")
             try box.startOrReloadService(config, options: nil)
             self.boxService = box
 
@@ -160,7 +143,11 @@ extension PacketTunnelProvider: LibboxCommandServerHandlerProtocol {
         proxySettings.httpsEnabled = enabled
         networkSettings.proxySettings = proxySettings
         self.networkSettings = networkSettings
-        setTunnelNetworkSettings(networkSettings)
+        setTunnelNetworkSettings(networkSettings) { [weak self] error in
+            if let error {
+                self?.logger.error("Failed to update proxy settings: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
 
     func writeDebugMessage(_ message: String?) {
@@ -216,6 +203,10 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
     func localDNSTransport() -> (any LibboxLocalDNSTransportProtocol)? { nil }
 
     func openTun(_ options: (any LibboxTunOptionsProtocol)?, ret0_: UnsafeMutablePointer<Int32>?) throws {
+        let settings = buildTunnelSettings(from: options)
+        try setTunnelNetworkSettingsBlocking(settings)
+        networkSettings = settings
+
         if let fd = self.packetFlow.value(forKeyPath: "socket.fileDescriptor") as? Int32 {
             ret0_?.pointee = fd
             logger.info("Opened packet tunnel fd from packetFlow socket")
@@ -242,16 +233,14 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
 
         let monitor = NWPathMonitor()
         pathMonitor = monitor
-        let semaphore = DispatchSemaphore(value: 0)
         monitor.pathUpdateHandler = { [weak self] path in
             self?.updateDefaultInterface(listener, path: path)
-            semaphore.signal()
             monitor.pathUpdateHandler = { [weak self] path in
                 self?.updateDefaultInterface(listener, path: path)
             }
         }
         monitor.start(queue: DispatchQueue.global(qos: .utility))
-        semaphore.wait()
+        updateDefaultInterface(listener, path: monitor.currentPath)
     }
 
     func systemCertificates() -> (any LibboxStringIteratorProtocol)? { nil }
@@ -274,6 +263,47 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
             isExpensive: path.isExpensive,
             isConstrained: path.isConstrained
         )
+    }
+
+    private func buildTunnelSettings(from options: (any LibboxTunOptionsProtocol)?) -> NEPacketTunnelNetworkSettings {
+        let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: "127.0.0.1")
+        settings.mtu = NSNumber(value: options?.getMTU() ?? 1500)
+
+        let ipv4 = NEIPv4Settings(addresses: ["172.19.0.1"], subnetMasks: ["255.255.255.252"])
+        ipv4.includedRoutes = [NEIPv4Route.default()]
+        settings.ipv4Settings = ipv4
+
+        let ipv6 = NEIPv6Settings(addresses: ["fdfe:dcba:9876::1"], networkPrefixLengths: [126])
+        ipv6.includedRoutes = [NEIPv6Route.default()]
+        settings.ipv6Settings = ipv6
+
+        settings.dnsSettings = NEDNSSettings(servers: dnsServers(from: options))
+        return settings
+    }
+
+    private func dnsServers(from options: (any LibboxTunOptionsProtocol)?) -> [String] {
+        guard let value = try? options?.getDNSServerAddress().value else {
+            return ["1.1.1.1", "8.8.8.8"]
+        }
+
+        let servers = value
+            .components(separatedBy: CharacterSet(charactersIn: ",\n"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return servers.isEmpty ? ["1.1.1.1", "8.8.8.8"] : servers
+    }
+
+    private func setTunnelNetworkSettingsBlocking(_ settings: NEPacketTunnelNetworkSettings) throws {
+        let semaphore = DispatchSemaphore(value: 0)
+        var capturedError: Error?
+        setTunnelNetworkSettings(settings) { error in
+            capturedError = error
+            semaphore.signal()
+        }
+        semaphore.wait()
+        if let capturedError {
+            throw capturedError
+        }
     }
 }
 
