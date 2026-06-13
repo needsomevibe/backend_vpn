@@ -17,4 +17,9 @@ struct APIEndpoint {
     static let me = APIEndpoint(path: "/me", method: .get, requiresAuth: true)
     static let vpnProfile = APIEndpoint(path: "/vpn/profile", method: .get, requiresAuth: true)
     static let vpnUsage = APIEndpoint(path: "/vpn/usage", method: .get, requiresAuth: true)
+    static let vpnEnable = APIEndpoint(path: "/vpn/enable", method: .post, requiresAuth: true)
+    static let vpnDisable = APIEndpoint(path: "/vpn/disable", method: .post, requiresAuth: true)
+    static let vpnResetTraffic = APIEndpoint(path: "/vpn/reset-traffic", method: .post, requiresAuth: true)
+    static let vpnRegenerateSubscription = APIEndpoint(path: "/vpn/regenerate-subscription", method: .post, requiresAuth: true)
+    static let plans = APIEndpoint(path: "/plans", method: .get, requiresAuth: false)
 }

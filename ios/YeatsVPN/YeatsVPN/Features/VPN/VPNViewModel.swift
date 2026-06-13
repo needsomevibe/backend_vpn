@@ -1,3 +1,4 @@
+import Combine
 import CoreImage.CIFilterBuiltins
 import SwiftUI
 import UIKit
@@ -5,16 +6,25 @@ import UIKit
 @MainActor
 final class VPNViewModel: ObservableObject {
     @Published var profile: VPNProfile?
+    @Published var servers: [ServerConfig] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var actionMessage: String?
 
     private let environment: AppEnvironment
     private let context = CIContext()
     private let filter = CIFilter.qrCodeGenerator()
+    private var cancellables = Set<AnyCancellable>()
 
     init(environment: AppEnvironment) {
         self.environment = environment
         self.profile = environment.vpnProfile
+        self.servers = environment.servers
+
+        environment.$servers
+            .receive(on: RunLoop.main)
+            .sink { [weak self] servers in self?.servers = servers }
+            .store(in: &cancellables)
     }
 
     var subscriptionURL: String {
@@ -28,6 +38,7 @@ final class VPNViewModel: ObservableObject {
         do {
             profile = try await environment.vpnService.profile()
             environment.vpnProfile = profile
+            await environment.loadServers()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -35,6 +46,39 @@ final class VPNViewModel: ObservableObject {
 
     func copySubscriptionURL() {
         UIPasteboard.general.string = subscriptionURL
+        showAction("Copied to clipboard")
+    }
+
+    func resetTraffic() async {
+        do {
+            _ = try await environment.vpnService.resetTraffic()
+            showAction("Traffic reset")
+            await refresh()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func regenerateSubscription() async {
+        do {
+            let result = try await environment.vpnService.regenerateSubscription()
+            showAction("New subscription URL generated")
+            // Update the profile with the new URL
+            if let currentProfile = profile {
+                profile = VPNProfile(
+                    status: currentProfile.status,
+                    subscriptionUrl: result.subscriptionUrl,
+                    trafficUsedGb: currentProfile.trafficUsedGb,
+                    trafficLimitGb: currentProfile.trafficLimitGb,
+                    expiresAt: currentProfile.expiresAt,
+                    nodeLocation: currentProfile.nodeLocation
+                )
+                environment.vpnProfile = profile
+            }
+            await environment.loadServers()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func qrImage() -> UIImage? {
@@ -53,5 +97,13 @@ final class VPNViewModel: ObservableObject {
             return nil
         }
         return URL(string: "\(scheme)://import?url=\(encoded)")
+    }
+
+    private func showAction(_ message: String) {
+        actionMessage = message
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            actionMessage = nil
+        }
     }
 }

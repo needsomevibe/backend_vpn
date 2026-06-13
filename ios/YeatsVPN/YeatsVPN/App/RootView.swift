@@ -29,7 +29,7 @@ struct MainTabsView: View {
             HomeView(viewModel: HomeViewModel(environment: environment))
                 .tabItem { Label("Home", systemImage: "power.circle.fill") }
             VPNView(viewModel: VPNViewModel(environment: environment))
-                .tabItem { Label("VPN", systemImage: "qrcode") }
+                .tabItem { Label("VPN", systemImage: "server.rack") }
             ProfileView(viewModel: ProfileViewModel(environment: environment))
                 .tabItem { Label("Profile", systemImage: "person.crop.circle") }
         }
