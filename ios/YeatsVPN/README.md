@@ -14,6 +14,12 @@ Xcode will resolve the Swift Package dependency:
 
 - `KeychainAccess` from `https://github.com/kishikawakatsumi/KeychainAccess.git`
 
+Before building the VPN target on a fresh checkout, unpack Libbox:
+
+```bash
+ios/YeatsVPN/scripts/unpack-libbox.sh
+```
+
 ## Architecture
 
 ```text
