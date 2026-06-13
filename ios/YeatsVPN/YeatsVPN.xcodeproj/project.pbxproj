@@ -46,6 +46,7 @@
 		A385BEB72FDCCFC000F657E9 /* PacketTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A385BEAC2FDCCFC000F657E9 /* PacketTunnel.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A385BF0E2FDCEAF700F657E9 /* Libbox.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A385BF0D2FDCEAF700F657E9 /* Libbox.xcframework */; };
 		A385BF0F2FDCEAF700F657E9 /* Libbox.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A385BF0D2FDCEAF700F657E9 /* Libbox.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A385BF112FDCEAF700F657E9 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A385BF112FDCEAF700F657E8 /* UIKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -130,6 +131,7 @@
 		A385BEAC2FDCCFC000F657E9 /* PacketTunnel.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PacketTunnel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
 		A385BF0D2FDCEAF700F657E9 /* Libbox.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Libbox.xcframework; path = YeatsVPN/Libbox.xcframework; sourceTree = "<group>"; };
+		A385BF112FDCEAF700F657E8 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -176,6 +178,7 @@
 			files = (
 				A385BEAF2FDCCFC000F657E9 /* NetworkExtension.framework in Frameworks */,
 				A385BF0E2FDCEAF700F657E9 /* Libbox.xcframework in Frameworks */,
+				A385BF112FDCEAF700F657E9 /* UIKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

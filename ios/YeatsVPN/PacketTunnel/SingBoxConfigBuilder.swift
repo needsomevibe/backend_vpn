@@ -6,8 +6,9 @@ import Foundation
 /// (base64-decoded proxy URI lines: vless://, vmess://, trojan://, ss://, hy2://).
 enum SingBoxConfigBuilder {
 
-    static func build(from rawSubscription: String, selectedIndex: Int = 0) -> String {
-        let lines = rawSubscription
+    static func build(from rawSubscription: String, selectedIndex: Int = 0) throws -> String {
+        let subscription = normalizedSubscription(rawSubscription)
+        let lines = subscription
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
@@ -19,7 +20,7 @@ enum SingBoxConfigBuilder {
             }
         }
 
-        guard !outbounds.isEmpty else { return "{}" }
+        guard !outbounds.isEmpty else { throw SingBoxConfigError.unsupportedSubscription }
 
         let mainTag = (selectedIndex < outbounds.count
             ? outbounds[selectedIndex]["tag"]
@@ -47,7 +48,7 @@ enum SingBoxConfigBuilder {
 
         guard let data = try? JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys]),
               let json = String(data: data, encoding: .utf8) else {
-            return "{}"
+            throw SingBoxConfigError.invalidJSON
         }
         return json
     }
@@ -103,6 +104,23 @@ enum SingBoxConfigBuilder {
         if uri.hasPrefix("ss://")       { return parseShadowsocks(uri, tag: tag) }
         if uri.hasPrefix("hy2://") || uri.hasPrefix("hysteria2://") { return parseHysteria2(uri, tag: tag) }
         return nil
+    }
+
+    private static func normalizedSubscription(_ rawSubscription: String) -> String {
+        let trimmed = rawSubscription.trimmingCharacters(in: .whitespacesAndNewlines)
+        if containsSupportedURI(trimmed) {
+            return trimmed
+        }
+        return base64Decode(trimmed) ?? trimmed
+    }
+
+    private static func containsSupportedURI(_ value: String) -> Bool {
+        value.contains("vless://")
+            || value.contains("vmess://")
+            || value.contains("trojan://")
+            || value.contains("ss://")
+            || value.contains("hy2://")
+            || value.contains("hysteria2://")
     }
 
     // MARK: - VLESS
@@ -247,7 +265,7 @@ enum SingBoxConfigBuilder {
         // ss://base64(method:password)@host:port#name
         // or ss://base64(method:password@host:port)#name
         let raw = String(uri.dropFirst("ss://".count))
-        let (decoded, fragment) = splitFragment(raw)
+        let (decoded, _) = splitFragment(raw)
 
         var method = "", password = "", host = "", port = 443
 
@@ -370,7 +388,8 @@ enum SingBoxConfigBuilder {
 
         case "grpc":
             transport["type"] = "grpc"
-            if let serviceName = params["serviceName"], !serviceName.isEmpty {
+            let serviceName = params["serviceName"] ?? params["service_name"] ?? params["serviceName".lowercased()]
+            if let serviceName, !serviceName.isEmpty {
                 transport["service_name"] = serviceName
             }
 
@@ -416,5 +435,19 @@ enum SingBoxConfigBuilder {
         while padded.count % 4 != 0 { padded += "=" }
         guard let data = Data(base64Encoded: padded) else { return nil }
         return String(data: data, encoding: .utf8)
+    }
+}
+
+enum SingBoxConfigError: LocalizedError {
+    case unsupportedSubscription
+    case invalidJSON
+
+    var errorDescription: String? {
+        switch self {
+        case .unsupportedSubscription:
+            return "Subscription does not contain a supported proxy URI."
+        case .invalidJSON:
+            return "Failed to generate sing-box JSON config."
+        }
     }
 }
