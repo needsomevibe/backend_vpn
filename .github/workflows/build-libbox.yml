@@ -40,7 +40,7 @@ jobs:
         working-directory: /tmp/sing-box
         run: |
           gomobile bind -v \
-            -target ios \
+            -target ios/arm64 \
             -trimpath \
             -ldflags "-s -w -X github.com/sagernet/sing-box/constant.Version=${{ inputs.singbox_version }}" \
             -tags "with_quic,with_utls,with_reality_server,with_clash_api,with_gvisor" \
