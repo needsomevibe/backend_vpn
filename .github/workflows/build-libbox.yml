@@ -8,6 +8,9 @@ on:
         required: true
         default: 'v1.13.13'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-14
@@ -35,10 +38,10 @@ jobs:
         run: |
           go run ./cmd/internal/build_libbox -target apple -platform ios
 
-      - name: Zip xcframework
+      - name: Package xcframework
         run: |
           cd /tmp/sing-box
-          zip -r Libbox.xcframework.zip Libbox.xcframework
+          ditto -c -k --sequesterRsrc --keepParent Libbox.xcframework Libbox.xcframework.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -55,8 +58,9 @@ jobs:
             Pre-built `Libbox.xcframework` from sing-box ${{ inputs.singbox_version }}.
 
             **Setup:**
-            1. Download `Libbox.xcframework.zip` below
-            2. Unzip into `ios/YeatsVPN/`
-            3. In Xcode: PacketTunnel target → General → Frameworks → Add `Libbox.xcframework` (Embed & Sign)
-            4. Build and run
+            ```bash
+            cd ios/YeatsVPN
+            ditto -x -k Libbox.xcframework.zip .
+            ```
+            Then in Xcode: PacketTunnel target → General → Frameworks → Add `Libbox.xcframework` (Embed & Sign) → Clean Build → Run.
           files: /tmp/sing-box/Libbox.xcframework.zip
