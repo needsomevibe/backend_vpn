@@ -18,7 +18,6 @@ final class APIClient: @unchecked Sendable {
         self.tokenStore = tokenStore
         self.decoder = JSONDecoder.yeats
         self.encoder = JSONEncoder()
-        self.encoder.keyEncodingStrategy = .convertToSnakeCase
     }
 
     func request<Response: Decodable>(_ endpoint: APIEndpoint) async throws -> Response {
@@ -76,7 +75,8 @@ final class APIClient: @unchecked Sendable {
             throw APIError.transport("Invalid server response.")
         }
         guard 200..<300 ~= http.statusCode else {
-            let message = (try? decoder.decode(ServerErrorEnvelope.self, from: data).error.message) ?? "Request failed."
+            let envelope = try? decoder.decode(ServerErrorEnvelope.self, from: data)
+            let message = envelope?.error.message ?? envelope?.message ?? "Request failed (\(http.statusCode))."
             if http.statusCode == 401 { throw APIError.unauthorized }
             throw APIError.server(status: http.statusCode, message: message)
         }
@@ -89,7 +89,24 @@ final class APIClient: @unchecked Sendable {
 }
 
 private struct ServerErrorEnvelope: Decodable {
-    let error: ServerError
+    let error: ServerError?
+    let message: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case error, message
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.message = try? container.decode(String.self, forKey: .message)
+        if let obj = try? container.decode(ServerError.self, forKey: .error) {
+            self.error = obj
+        } else if let str = try? container.decode(String.self, forKey: .error) {
+            self.error = ServerError(message: str)
+        } else {
+            self.error = nil
+        }
+    }
 }
 
 private struct ServerError: Decodable {
@@ -99,7 +116,6 @@ private struct ServerError: Decodable {
 extension JSONDecoder {
     static var yeats: JSONDecoder {
         let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let value = try container.decode(String.self)
