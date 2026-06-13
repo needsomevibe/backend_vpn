@@ -5,6 +5,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
 private let logger = Logger(subsystem: "uz.yeats.vpn.PacketTunnel", category: "PacketTunnel")
 private var subscriptionURL: String?
 
+
 override func startTunnel(options: [String: NSObject]?, completionHandler: @escaping (Error?) -> Void) {
     let providerURL = (protocolConfiguration as? NETunnelProviderProtocol)?
         .providerConfiguration?["subscriptionUrl"] as? String
