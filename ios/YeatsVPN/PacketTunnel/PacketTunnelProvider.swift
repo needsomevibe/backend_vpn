@@ -39,12 +39,12 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
             settings.ipv6Settings = ipv6
 
             settings.dnsSettings = NEDNSSettings(servers: ["1.1.1.1", "8.8.8.8"])
-            settings.mtu = 1500
+            settings.mtu = 1500 as NSNumber
 
             try await setTunnelNetworkSettings(settings)
 
             // 2. Start Sing-Box
-            let box = LibboxNewCommandServer(self, self, nil)
+            let box = LibboxNewCommandServer(self as LibboxCommandServerHandlerProtocol, self as LibboxPlatformInterfaceProtocol, nil)
             try box?.startOrReloadService(config, options: nil)
             self.boxService = box
 
@@ -101,35 +101,35 @@ var errorDescription: String? {
 
 // MARK: - Libbox Protocols
 
-extension PacketTunnelProvider: LibboxCommandServerHandler {
-    func getSystemProxyStatus() throws -> LibboxSystemProxyStatus? { nil }
-    func serviceReload() throws -> Bool { true }
-    func serviceStop() throws -> Bool { true }
-    func setSystemProxyEnabled(_ enabled: Bool) throws -> Bool { true }
-    func writeDebugMessage(_ message: String?) {
+extension PacketTunnelProvider: LibboxCommandServerHandlerProtocol {
+    @objc func getSystemProxyStatus() throws -> LibboxSystemProxyStatus? { nil }
+    @objc func serviceReload() throws -> Bool { true }
+    @objc func serviceStop() throws -> Bool { true }
+    @objc func setSystemProxyEnabled(_ enabled: Bool) throws -> Bool { true }
+    @objc func writeDebugMessage(_ message: String?) {
         if let message { logger.debug("\(message, privacy: .public)") }
     }
 }
 
-extension PacketTunnelProvider: LibboxPlatformInterface {
-    func autoDetectInterfaceControl(_ fd: Int32) throws -> Bool { true }
-    func clearDNSCache() {}
-    func closeDefaultInterfaceMonitor(_ listener: LibboxInterfaceUpdateListener?) throws -> Bool { true }
-    func findConnectionOwner(_ ipProtocol: Int32, sourceAddress: String?, sourcePort: Int32, destinationAddress: String?, destinationPort: Int32) throws -> LibboxConnectionOwner? { nil }
-    func getInterfaces() throws -> LibboxNetworkInterfaceIterator? { nil }
-    func includeAllNetworks() -> Bool { true }
-    func localDNSTransport() -> LibboxLocalDNSTransport? { nil }
-    func openTun(_ options: LibboxTunOptions?, ret0_: UnsafeMutablePointer<Int32>?) throws -> Bool {
-        // Libbox handles TUN internally when auto_route is true in config.
-        // We return the FD from packetFlow if needed, but sing-box usually takes it.
-        // On iOS NE, we don't always need to pass FD if we use sing-box's internal TUN.
-        true
+extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
+    @objc func autoDetectInterfaceControl(_ fd: Int32) throws -> Bool { true }
+    @objc func clearDNSCache() {}
+    @objc func closeDefaultInterfaceMonitor(_ listener: LibboxInterfaceUpdateListener?) throws -> Bool { true }
+    @objc func findConnectionOwner(_ ipProtocol: Int32, sourceAddress: String?, sourcePort: Int32, destinationAddress: String?, destinationPort: Int32) throws -> LibboxConnectionOwner? { nil }
+    @objc func getInterfaces() throws -> LibboxNetworkInterfaceIterator? { nil }
+    @objc func includeAllNetworks() -> Bool { true }
+    @objc func localDNSTransport() -> LibboxLocalDNSTransport? { nil }
+    @objc func openTun(_ options: LibboxTunOptions?, ret0_: UnsafeMutablePointer<Int32>?) throws -> Bool {
+        if let fd = self.packetFlow.value(forKeyPath: "tunnelFileDescriptor") as? Int32 {
+            ret0_?.pointee = fd
+        }
+        return true
     }
-    func readWIFIState() -> LibboxWIFIState? { nil }
-    func sendNotification(_ notification: LibboxNotification?) throws -> Bool { true }
-    func startDefaultInterfaceMonitor(_ listener: LibboxInterfaceUpdateListener?) throws -> Bool { true }
-    func systemCertificates() -> LibboxStringIterator? { nil }
-    func underNetworkExtension() -> Bool { true }
-    func usePlatformAutoDetectInterfaceControl() -> Bool { false }
-    func useProcFS() -> Bool { false }
+    @objc func readWIFIState() -> LibboxWIFIState? { nil }
+    @objc func sendNotification(_ notification: LibboxNotification?) throws -> Bool { true }
+    @objc func startDefaultInterfaceMonitor(_ listener: LibboxInterfaceUpdateListener?) throws -> Bool { true }
+    @objc func systemCertificates() -> LibboxStringIterator? { nil }
+    @objc func underNetworkExtension() -> Bool { true }
+    @objc func usePlatformAutoDetectInterfaceControl() -> Bool { false }
+    @objc func useProcFS() -> Bool { false }
 }
