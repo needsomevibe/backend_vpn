@@ -33,6 +33,14 @@ final class HomeViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] entries in self?.logs = entries }
             .store(in: &cancellables)
+        Timer.publish(every: 1, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.environment.debugLog.importExtensionLogs()
+            }
+            .store(in: &cancellables)
+
+        environment.debugLog.importExtensionLogs()
     }
 
     var progress: Double {
@@ -69,9 +77,12 @@ final class HomeViewModel: ObservableObject {
         case .disconnected, .disconnecting, .unavailable:
             environment.connectionState = .connecting
             do {
+                environment.debugLog.clear()
+                environment.debugLog.info("Starting fresh VPN connection attempt")
                 // Enable VPN on the backend first
                 _ = try? await environment.vpnService.enable()
                 try await environment.networkExtension.connect(subscriptionURL: url)
+                try? await Task.sleep(for: .seconds(1))
                 let state = await environment.networkExtension.currentState()
                 environment.connectionState = state
                 environment.debugLog.importExtensionLogs()

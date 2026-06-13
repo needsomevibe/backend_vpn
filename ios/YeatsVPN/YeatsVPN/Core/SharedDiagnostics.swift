@@ -10,6 +10,16 @@ enum SharedDiagnostics {
             .appendingPathComponent(logFileName)
     }
 
+    static var statusMessage: String {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) else {
+            return "App Group container is unavailable: \(appGroupIdentifier)"
+        }
+
+        let fileURL = containerURL.appendingPathComponent(logFileName)
+        let exists = FileManager.default.fileExists(atPath: fileURL.path)
+        return "App Group OK, extension log \(exists ? "exists" : "missing"): \(fileURL.path)"
+    }
+
     static func readLines() -> [String] {
         guard let logFileURL,
               let content = try? String(contentsOf: logFileURL, encoding: .utf8) else {

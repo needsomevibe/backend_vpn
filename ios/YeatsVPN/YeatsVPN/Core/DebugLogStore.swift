@@ -7,6 +7,7 @@ final class DebugLogStore: ObservableObject {
 
     private let logger = Logger(subsystem: "uz.yeats.vpn", category: "App")
     private var importedExtensionLines = Set<String>()
+    private var didLogSharedDiagnosticsStatus = false
 
     func info(_ message: String) {
         append(level: "info", message: message)
@@ -25,6 +26,11 @@ final class DebugLogStore: ObservableObject {
     }
 
     func importExtensionLogs() {
+        if !didLogSharedDiagnosticsStatus {
+            didLogSharedDiagnosticsStatus = true
+            append(level: "diagnostic", message: SharedDiagnostics.statusMessage)
+        }
+
         for line in SharedDiagnostics.readLines() where !importedExtensionLines.contains(line) {
             importedExtensionLines.insert(line)
             append(level: "extension", message: line)
