@@ -17,35 +17,23 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
-
-      - name: Install gomobile
-        run: |
-          go install golang.org/x/mobile/cmd/gomobile@latest
-          go install golang.org/x/mobile/cmd/gobind@latest
-          gomobile init
+          go-version: '1.24'
 
       - name: Clone sing-box
         run: |
           git clone --depth 1 --branch ${{ inputs.singbox_version }} \
             https://github.com/SagerNet/sing-box.git /tmp/sing-box
 
-      - name: Add gomobile tool dependency
-        working-directory: /tmp/sing-box
+      - name: Install sagernet gomobile
         run: |
-          go get -tool golang.org/x/mobile/cmd/gobind@latest
-          go mod tidy
+          go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.12
+          go install github.com/sagernet/gomobile/cmd/gobind@v0.1.12
+          gomobile init
 
       - name: Build Libbox.xcframework
         working-directory: /tmp/sing-box
         run: |
-          gomobile bind -v \
-            -target ios/arm64 \
-            -trimpath \
-            -ldflags "-s -w -X github.com/sagernet/sing-box/constant.Version=${{ inputs.singbox_version }}" \
-            -tags "with_quic,with_utls,with_reality_server,with_clash_api,with_gvisor" \
-            -o Libbox.xcframework \
-            ./experimental/libbox
+          go run ./cmd/internal/build_libbox -target apple -platform ios
 
       - name: Zip xcframework
         run: |
