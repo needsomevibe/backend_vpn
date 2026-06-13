@@ -22,6 +22,7 @@ final class DebugLogStore: ObservableObject {
     func clear() {
         entries.removeAll()
         importedExtensionLines.removeAll()
+        didLogSharedDiagnosticsStatus = false
         SharedDiagnostics.clear()
     }
 

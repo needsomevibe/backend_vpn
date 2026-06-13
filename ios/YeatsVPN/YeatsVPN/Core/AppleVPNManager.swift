@@ -57,6 +57,8 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
             PacketTunnelKeys.subscriptionURL: subscriptionURL as NSString
         ])
         await logInfo("startTunnel returned without throwing")
+        try? await Task.sleep(for: .seconds(1))
+        await pingProvider(session)
     }
 
     func disconnect() async {
@@ -157,6 +159,28 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
                     continuation.resume()
                 }
             }
+        }
+    }
+
+    private func pingProvider(_ session: NETunnelProviderSession) async {
+        do {
+            let data = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data?, Error>) in
+                do {
+                    try session.sendProviderMessage(Data("status".utf8)) { response in
+                        continuation.resume(returning: response)
+                    }
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+
+            if let data, let response = String(data: data, encoding: .utf8) {
+                await logInfo("PacketTunnel provider responded: \(response)")
+            } else {
+                await logInfo("PacketTunnel provider responded with empty message")
+            }
+        } catch {
+            await logError("PacketTunnel provider did not respond: \(error.localizedDescription)")
         }
     }
 
