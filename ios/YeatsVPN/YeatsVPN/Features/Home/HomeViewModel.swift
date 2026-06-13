@@ -41,6 +41,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     func refresh() async {
+        environment.debugLog.importExtensionLogs()
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -57,6 +58,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     func connectTapped() async {
+        environment.debugLog.importExtensionLogs()
         guard let url = profile?.subscriptionUrl else { return }
         switch connectionState {
         case .connected, .connecting:
@@ -72,9 +74,11 @@ final class HomeViewModel: ObservableObject {
                 try await environment.networkExtension.connect(subscriptionURL: url)
                 let state = await environment.networkExtension.currentState()
                 environment.connectionState = state
+                environment.debugLog.importExtensionLogs()
             } catch {
                 environment.connectionState = .unavailable(error.localizedDescription)
                 environment.debugLog.error("Connect failed: \(error.localizedDescription)")
+                environment.debugLog.importExtensionLogs()
             }
         }
     }

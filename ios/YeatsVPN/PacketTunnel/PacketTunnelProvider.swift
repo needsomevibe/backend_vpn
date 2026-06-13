@@ -5,6 +5,8 @@ import Libbox
 
 final class PacketTunnelProvider: NEPacketTunnelProvider {
 private let logger = Logger(subsystem: "uz.yeats.vpn.PacketTunnel", category: "PacketTunnel")
+private let appGroupIdentifier = "group.uz.yeats.vpn"
+private let extensionLogFileName = "vpn-extension.log"
 private var subscriptionURL: String?
 private var boxService: LibboxCommandServer?
 private var networkSettings: NEPacketTunnelNetworkSettings?
@@ -17,13 +19,15 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
     subscriptionURL = optionURL ?? providerURL
 
     guard let subscriptionURL, let url = URL(string: subscriptionURL) else {
+        logError("Missing subscription URL in provider configuration/options")
         completionHandler(PacketTunnelError.missingSubscriptionURL)
         return
     }
 
     Task {
         do {
-            logger.info("Downloading subscription for tunnel startup")
+            logInfo("PacketTunnel start requested")
+            logInfo("Downloading subscription for tunnel startup")
             let (data, response) = try await URLSession.shared.data(from: url)
             if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
                 throw PacketTunnelError.subscriptionHTTPStatus(http.statusCode)
@@ -31,30 +35,30 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
             guard let rawSubscription = String(data: data, encoding: .utf8) else {
                 throw PacketTunnelError.invalidSubscriptionData
             }
-            logger.info("Subscription downloaded, bytes: \(data.count)")
+            logInfo("Subscription downloaded, bytes: \(data.count)")
 
             let config = try SingBoxConfigBuilder.build(from: rawSubscription)
-            logger.info("Generated sing-box config, bytes: \(config.utf8.count)")
+            logInfo("Generated sing-box config, bytes: \(config.utf8.count)")
 
             let box = LibboxNewCommandServer(self as LibboxCommandServerHandlerProtocol, self as LibboxPlatformInterfaceProtocol, nil)
             guard let box else {
                 throw PacketTunnelError.libboxUnavailable
             }
-            logger.info("Starting Libbox service")
+            logInfo("Starting Libbox service")
             try box.startOrReloadService(config, options: nil)
             self.boxService = box
 
-            logger.info("VPN started successfully with Sing-Box integration")
+            logInfo("VPN started successfully with Sing-Box integration")
             completionHandler(nil)
         } catch {
-            logger.error("Failed to start VPN: \(error.localizedDescription, privacy: .public)")
+            logError("Failed to start VPN: \(error.localizedDescription)")
             completionHandler(error)
         }
     }
 }
 
 override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
-    logger.info("Stopping tunnel, reason: \(reason.rawValue)")
+    logInfo("Stopping tunnel, reason: \(reason.rawValue)")
     boxService?.close()
     boxService = nil
     pathMonitor?.cancel()
@@ -145,13 +149,13 @@ extension PacketTunnelProvider: LibboxCommandServerHandlerProtocol {
         self.networkSettings = networkSettings
         setTunnelNetworkSettings(networkSettings) { [weak self] error in
             if let error {
-                self?.logger.error("Failed to update proxy settings: \(error.localizedDescription, privacy: .public)")
+                self?.logError("Failed to update proxy settings: \(error.localizedDescription)")
             }
         }
     }
 
     func writeDebugMessage(_ message: String?) {
-        if let message { logger.debug("\(message, privacy: .public)") }
+        if let message { logInfo("libbox: \(message)") }
     }
 }
 
@@ -209,18 +213,18 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
 
         if let fd = self.packetFlow.value(forKeyPath: "socket.fileDescriptor") as? Int32 {
             ret0_?.pointee = fd
-            logger.info("Opened packet tunnel fd from packetFlow socket")
+            logInfo("Opened packet tunnel fd from packetFlow socket")
             return
         }
 
         let fallbackFd = LibboxGetTunnelFileDescriptor()
         if fallbackFd != -1 {
             ret0_?.pointee = fallbackFd
-            logger.info("Opened packet tunnel fd from Libbox fallback")
+            logInfo("Opened packet tunnel fd from Libbox fallback")
             return
         }
 
-        logger.error("Missing packet tunnel file descriptor")
+        logError("Missing packet tunnel file descriptor")
         throw PacketTunnelError.missingTunnelFileDescriptor
     }
 
@@ -294,6 +298,7 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
     }
 
     private func setTunnelNetworkSettingsBlocking(_ settings: NEPacketTunnelNetworkSettings) throws {
+        logInfo("Applying tunnel network settings")
         let semaphore = DispatchSemaphore(value: 0)
         var capturedError: Error?
         setTunnelNetworkSettings(settings) { error in
@@ -304,6 +309,42 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
         if let capturedError {
             throw capturedError
         }
+        logInfo("Tunnel network settings applied")
+    }
+
+    private func logInfo(_ message: String) {
+        logger.info("\(message, privacy: .public)")
+        appendSharedLog(level: "info", message: message)
+    }
+
+    private func logError(_ message: String) {
+        logger.error("\(message, privacy: .public)")
+        appendSharedLog(level: "error", message: message)
+    }
+
+    private func appendSharedLog(level: String, message: String) {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) else {
+            return
+        }
+
+        let line = "\(Self.timestamp()) [\(level)] \(message)\n"
+        let fileURL = containerURL.appendingPathComponent(extensionLogFileName)
+        guard let data = line.data(using: .utf8) else { return }
+
+        if FileManager.default.fileExists(atPath: fileURL.path),
+           let handle = try? FileHandle(forWritingTo: fileURL) {
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: data)
+        } else {
+            try? data.write(to: fileURL, options: [.atomic])
+        }
+    }
+
+    private static func timestamp() -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: Date())
     }
 }
 

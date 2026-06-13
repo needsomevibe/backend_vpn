@@ -6,6 +6,7 @@ final class DebugLogStore: ObservableObject {
     @Published private(set) var entries: [DebugLogEntry] = []
 
     private let logger = Logger(subsystem: "uz.yeats.vpn", category: "App")
+    private var importedExtensionLines = Set<String>()
 
     func info(_ message: String) {
         append(level: "info", message: message)
@@ -19,6 +20,15 @@ final class DebugLogStore: ObservableObject {
 
     func clear() {
         entries.removeAll()
+        importedExtensionLines.removeAll()
+        SharedDiagnostics.clear()
+    }
+
+    func importExtensionLogs() {
+        for line in SharedDiagnostics.readLines() where !importedExtensionLines.contains(line) {
+            importedExtensionLines.insert(line)
+            append(level: "extension", message: line)
+        }
     }
 
     private func append(level: String, message: String) {
