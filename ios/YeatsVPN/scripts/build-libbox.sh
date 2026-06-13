@@ -6,9 +6,11 @@ set -euo pipefail
 # Prerequisites:
 #   brew install go
 #   go install golang.org/x/mobile/cmd/gomobile@latest
+#   go install golang.org/x/mobile/cmd/gobind@latest
 #   gomobile init
 #
 # Usage:
+#   cd ios/YeatsVPN
 #   ./scripts/build-libbox.sh [version]
 #   # e.g. ./scripts/build-libbox.sh v1.13.13
 
@@ -19,6 +21,31 @@ BUILD_DIR="$PROJECT_DIR/.build/sing-box"
 OUTPUT="$PROJECT_DIR/Libbox.xcframework"
 
 echo "==> Building Libbox.xcframework (sing-box $SINGBOX_VERSION)"
+
+# Check prerequisites
+if ! command -v go &>/dev/null; then
+    echo ""
+    echo "ERROR: Go is not installed."
+    echo ""
+    echo "Install it with:"
+    echo "  brew install go"
+    echo ""
+    echo "Then re-run this script."
+    exit 1
+fi
+
+echo "==> Go version: $(go version)"
+
+# Install gomobile if needed
+if ! command -v gomobile &>/dev/null; then
+    echo "==> Installing gomobile..."
+    go install golang.org/x/mobile/cmd/gomobile@latest
+    go install golang.org/x/mobile/cmd/gobind@latest
+    export PATH="$PATH:$(go env GOPATH)/bin"
+    gomobile init
+fi
+
+echo "==> gomobile: $(which gomobile)"
 
 # Clone sing-box if not present
 if [ ! -d "$BUILD_DIR" ]; then
@@ -33,14 +60,6 @@ else
 fi
 
 cd "$BUILD_DIR"
-
-# Ensure gomobile is available
-if ! command -v gomobile &>/dev/null; then
-    echo "==> Installing gomobile..."
-    go install golang.org/x/mobile/cmd/gomobile@latest
-    go install golang.org/x/mobile/cmd/gobind@latest
-    gomobile init
-fi
 
 # Build the iOS xcframework
 echo "==> Building xcframework for iOS (arm64)..."
