@@ -1,13 +1,18 @@
 import os.log
 import NetworkExtension
+#if canImport(Libbox)
 import Libbox
+#endif
 
 final class PacketTunnelProvider: NEPacketTunnelProvider {
     private let logger = Logger(subsystem: "uz.yeats.vpn.PacketTunnel", category: "PacketTunnel")
-    private var boxService: LibboxBoxService?
-    private var commandServer: LibboxCommandServer?
     private var subscriptionURL: String?
     private var rawSubscription: String?
+
+    #if canImport(Libbox)
+    private var boxService: LibboxBoxService?
+    private var commandServer: LibboxCommandServer?
+    #endif
 
     // MARK: - Tunnel Lifecycle
 
@@ -32,13 +37,23 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             }
             self.rawSubscription = decoded
             self.logger.info("Subscription fetched, building sing-box config.")
+
+            #if canImport(Libbox)
             self.startSingBox(rawSubscription: decoded, completionHandler: completionHandler)
+            #else
+            self.logger.warning("Libbox not available — running in passthrough mode (no proxy).")
+            self.applyFallbackTunnelSettings(completionHandler: completionHandler)
+            #endif
         }
     }
 
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
         logger.info("Stopping Yeats packet tunnel, reason: \(reason.rawValue)")
+
+        #if canImport(Libbox)
         stopSingBox()
+        #endif
+
         subscriptionURL = nil
         rawSubscription = nil
         completionHandler()
@@ -46,16 +61,20 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
 
     override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
         guard let completionHandler else { return }
-        let status = PacketTunnelStatus(
-            isRunning: boxService != nil,
-            subscriptionURL: subscriptionURL
-        )
+
+        var isRunning = subscriptionURL != nil
+        #if canImport(Libbox)
+        isRunning = boxService != nil
+        #endif
+
+        let status = PacketTunnelStatus(isRunning: isRunning, subscriptionURL: subscriptionURL)
         let data = try? JSONEncoder().encode(status)
         completionHandler(data ?? messageData)
     }
 
     // MARK: - Sing-Box Integration
 
+    #if canImport(Libbox)
     private func startSingBox(rawSubscription: String, completionHandler: @escaping (Error?) -> Void) {
         let selectedIndex = (protocolConfiguration as? NETunnelProviderProtocol)?
             .providerConfiguration?["selectedServerIndex"] as? Int ?? 0
@@ -108,6 +127,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         LibboxSetup(workDir, workDir, tmpDir, false)
         LibboxRedirectStderr(workDir + "/stderr.log", nil)
     }
+    #endif
 
     private func sharedContainerPath() -> String {
         let groupID = "group.uz.yeats.vpn"
@@ -115,6 +135,33 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             return url.path
         }
         return NSTemporaryDirectory()
+    }
+
+    // MARK: - Fallback (no Libbox)
+
+    private func applyFallbackTunnelSettings(completionHandler: @escaping (Error?) -> Void) {
+        let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: "10.255.0.1")
+
+        let ipv4 = NEIPv4Settings(addresses: ["10.255.0.2"], subnetMasks: ["255.255.255.0"])
+        ipv4.includedRoutes = [NEIPv4Route.default()]
+        settings.ipv4Settings = ipv4
+
+        let ipv6 = NEIPv6Settings(addresses: ["fd00::2"], networkPrefixLengths: [64])
+        ipv6.includedRoutes = [NEIPv6Route.default()]
+        settings.ipv6Settings = ipv6
+
+        settings.dnsSettings = NEDNSSettings(servers: ["1.1.1.1", "1.0.0.1", "8.8.8.8"])
+        settings.mtu = NSNumber(value: 1400)
+
+        setTunnelNetworkSettings(settings) { [weak self] error in
+            if let error {
+                self?.logger.error("Failed to apply tunnel settings: \(error.localizedDescription, privacy: .public)")
+                completionHandler(error)
+                return
+            }
+            self?.logger.info("Fallback tunnel settings applied (no proxy engine).")
+            completionHandler(nil)
+        }
     }
 
     // MARK: - TUN File Descriptor
@@ -167,10 +214,25 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         }
         task.resume()
     }
+
+    // MARK: - Helpers
+
+    private func parseCIDR(_ cidr: String) -> (String, Int) {
+        let parts = cidr.components(separatedBy: "/")
+        let address = parts[0]
+        let prefix = parts.count > 1 ? Int(parts[1]) ?? 32 : 32
+        return (address, prefix)
+    }
+
+    private func prefixToMask(_ prefix: Int) -> String {
+        let mask = prefix > 0 ? UInt32.max << (32 - prefix) : 0
+        return "\(mask >> 24 & 0xFF).\(mask >> 16 & 0xFF).\(mask >> 8 & 0xFF).\(mask & 0xFF)"
+    }
 }
 
 // MARK: - LibboxPlatformInterface
 
+#if canImport(Libbox)
 extension PacketTunnelProvider: LibboxPlatformInterface {
 
     func usePlatformAutoDetectInterfaceControl() -> Bool {
@@ -273,21 +335,8 @@ extension PacketTunnelProvider: LibboxPlatformInterface {
     func writeMemoryLimitWarning(_ memoryLimit: Int64) {
         logger.warning("Memory limit warning: \(memoryLimit)")
     }
-
-    // MARK: - Helpers
-
-    private func parseCIDR(_ cidr: String) -> (String, Int) {
-        let parts = cidr.components(separatedBy: "/")
-        let address = parts[0]
-        let prefix = parts.count > 1 ? Int(parts[1]) ?? 32 : 32
-        return (address, prefix)
-    }
-
-    private func prefixToMask(_ prefix: Int) -> String {
-        let mask = prefix > 0 ? UInt32.max << (32 - prefix) : 0
-        return "\(mask >> 24 & 0xFF).\(mask >> 16 & 0xFF).\(mask >> 8 & 0xFF).\(mask & 0xFF)"
-    }
 }
+#endif
 
 // MARK: - Types
 
