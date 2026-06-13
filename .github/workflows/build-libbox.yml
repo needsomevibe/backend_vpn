@@ -1,0 +1,68 @@
+name: Build Libbox.xcframework
+
+on:
+  workflow_dispatch:
+    inputs:
+      singbox_version:
+        description: 'sing-box version tag'
+        required: true
+        default: 'v1.13.13'
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install gomobile
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          gomobile init
+
+      - name: Clone sing-box
+        run: |
+          git clone --depth 1 --branch ${{ inputs.singbox_version }} \
+            https://github.com/SagerNet/sing-box.git /tmp/sing-box
+
+      - name: Build Libbox.xcframework
+        working-directory: /tmp/sing-box
+        run: |
+          gomobile bind -v \
+            -target ios \
+            -trimpath \
+            -ldflags "-s -w -X github.com/sagernet/sing-box/constant.Version=${{ inputs.singbox_version }}" \
+            -tags "with_quic,with_utls,with_reality_server,with_clash_api,with_gvisor" \
+            -o Libbox.xcframework \
+            ./experimental/libbox
+
+      - name: Zip xcframework
+        run: |
+          cd /tmp/sing-box
+          zip -r Libbox.xcframework.zip Libbox.xcframework
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Libbox-${{ inputs.singbox_version }}
+          path: /tmp/sing-box/Libbox.xcframework.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: libbox-${{ inputs.singbox_version }}
+          name: Libbox ${{ inputs.singbox_version }}
+          body: |
+            Pre-built `Libbox.xcframework` from sing-box ${{ inputs.singbox_version }}.
+
+            **Setup:**
+            1. Download `Libbox.xcframework.zip` below
+            2. Unzip into `ios/YeatsVPN/`
+            3. In Xcode: PacketTunnel target → General → Frameworks → Add `Libbox.xcframework` (Embed & Sign)
+            4. Build and run
+          files: /tmp/sing-box/Libbox.xcframework.zip

@@ -50,8 +50,6 @@ final class HomeViewModel: ObservableObject {
             self.profile = try await profileResult
             self.usage = try await usageResult
             environment.vpnProfile = self.profile
-            connectionState = await environment.networkExtension.currentState()
-            environment.connectionState = connectionState
         } catch {
             errorMessage = error.localizedDescription
             environment.debugLog.error("Home refresh failed: \(error.localizedDescription)")
