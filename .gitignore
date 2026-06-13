@@ -10,3 +10,5 @@ docker-data
 
 **/xcuserdata/
 **/*.xcuserstate
+**/.build/
+**/Libbox.xcframework/
