@@ -7,9 +7,19 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
     private let localizedDescription = "Yeats VPN"
     private let logger = Logger(subsystem: "uz.yeats.vpn", category: "AppleVPNManager")
     private let debugLog: DebugLogStore?
+    private var statusObserver: NSObjectProtocol?
+
+    var onStateChange: (@Sendable (VPNConnectionState) -> Void)?
 
     init(debugLog: DebugLogStore? = nil) {
         self.debugLog = debugLog
+        startObservingStatus()
+    }
+
+    deinit {
+        if let statusObserver {
+            NotificationCenter.default.removeObserver(statusObserver)
+        }
     }
 
     func currentState() async -> VPNConnectionState {
@@ -20,20 +30,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
                 return .disconnected
             }
             await logInfo("Current NE status: \(manager.connection.status.rawValue)")
-            switch manager.connection.status {
-            case .connected:
-                return .connected
-            case .connecting, .reasserting:
-                return .connecting
-            case .disconnecting:
-                return .connecting
-            case .invalid:
-                return .unavailable("VPN configuration is invalid. Reinstall the VPN profile.")
-            case .disconnected:
-                return .disconnected
-            @unknown default:
-                return .disconnected
-            }
+            return mapStatus(manager.connection.status)
         } catch {
             await logError("Failed to load VPN state: \(error.localizedDescription)")
             return .unavailable(error.localizedDescription)
@@ -73,6 +70,39 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         }
     }
 
+    // MARK: - Status Observation
+
+    private func startObservingStatus() {
+        statusObserver = NotificationCenter.default.addObserver(
+            forName: .NEVPNStatusDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let connection = notification.object as? NEVPNConnection else { return }
+            let state = self?.mapStatus(connection.status) ?? .disconnected
+            self?.onStateChange?(state)
+        }
+    }
+
+    private func mapStatus(_ status: NEVPNStatus) -> VPNConnectionState {
+        switch status {
+        case .connected:
+            return .connected
+        case .connecting, .reasserting:
+            return .connecting
+        case .disconnecting:
+            return .disconnecting
+        case .invalid:
+            return .unavailable("VPN configuration is invalid. Reinstall the VPN profile.")
+        case .disconnected:
+            return .disconnected
+        @unknown default:
+            return .disconnected
+        }
+    }
+
+    // MARK: - Manager Loading
+
     private func loadManager() async throws -> NETunnelProviderManager? {
         let managers = try await NETunnelProviderManager.loadAllFromPreferences()
         await logInfo("Loaded \(managers.count) VPN manager(s) from preferences")
@@ -98,6 +128,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         manager.localizedDescription = localizedDescription
         manager.protocolConfiguration = proto
         manager.isEnabled = true
+        manager.isOnDemandEnabled = false
         return manager
     }
 

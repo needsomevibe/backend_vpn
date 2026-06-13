@@ -13,6 +13,14 @@ final class ProfileViewModel: ObservableObject {
         self.user = environment.currentUser
     }
 
+    var plan: Plan? { user?.subscription?.plan }
+    var subscription: Subscription? { user?.subscription }
+    var devices: [Device] { user?.devices ?? [] }
+
+    var memberSince: String {
+        user?.createdAt?.formatted(.dateTime.month(.wide).year()) ?? "Unknown"
+    }
+
     func refresh() async {
         isLoading = true
         errorMessage = nil

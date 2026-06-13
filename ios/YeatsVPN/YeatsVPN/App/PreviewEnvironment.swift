@@ -19,6 +19,7 @@ extension AppEnvironment {
         environment.route = .main
         environment.currentUser = PreviewData.user
         environment.vpnProfile = PreviewData.vpnProfile
+        environment.servers = PreviewData.servers
         return environment
     }
 }
@@ -57,8 +58,16 @@ enum PreviewData {
             provider: "internal",
             plan: Plan(id: UUID().uuidString, name: "Free", trafficLimitGb: 100, deviceLimit: 1, durationDays: 30, priceCents: 0, currency: "USD")
         ),
-        devices: []
+        devices: [
+            Device(id: UUID().uuidString, deviceId: "preview-device", platform: "ios", name: "iPhone 15 Pro", lastSeenAt: Date())
+        ]
     )
+
+    static let servers: [ServerConfig] = [
+        ServerConfig(id: "1", name: "US East", address: "us1.yeats.uz", port: 443, proto: .vless, rawURI: "vless://demo@us1.yeats.uz:443#US%20East", countryCode: "US"),
+        ServerConfig(id: "2", name: "Germany Frankfurt", address: "de1.yeats.uz", port: 443, proto: .vless, rawURI: "vless://demo@de1.yeats.uz:443#Germany%20Frankfurt", countryCode: "DE"),
+        ServerConfig(id: "3", name: "Netherlands", address: "nl1.yeats.uz", port: 443, proto: .trojan, rawURI: "trojan://demo@nl1.yeats.uz:443#Netherlands", countryCode: "NL"),
+    ]
 }
 
 actor InMemoryTokenStore: TokenStoring {
@@ -94,6 +103,13 @@ struct PreviewVPNService: VPNServicing {
     func profile() async throws -> VPNProfile { PreviewData.vpnProfile }
     func usage() async throws -> VPNUsage {
         VPNUsage(usedTrafficBytes: "13314398617", usedTrafficGb: 12.4, trafficLimitBytes: "107374182400", trafficLimitGb: 100, nodeLocation: "US")
+    }
+    func enable() async throws -> VPNToggleResponse { VPNToggleResponse(id: nil, status: "ACTIVE", success: true) }
+    func disable() async throws -> VPNToggleResponse { VPNToggleResponse(id: nil, status: "DISABLED", success: true) }
+    func resetTraffic() async throws -> VPNResetTrafficResponse { VPNResetTrafficResponse(success: true) }
+    func regenerateSubscription() async throws -> VPNRegenerateResponse { VPNRegenerateResponse(subscriptionUrl: "https://sub.yeats.uz/new-demo") }
+    func plans() async throws -> [Plan] {
+        [Plan(id: UUID().uuidString, name: "Free", trafficLimitGb: 100, deviceLimit: 1, durationDays: 30, priceCents: 0, currency: "USD")]
     }
 }
 #endif

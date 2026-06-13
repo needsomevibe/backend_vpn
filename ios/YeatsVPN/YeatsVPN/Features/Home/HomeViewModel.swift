@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 @MainActor
@@ -7,14 +8,31 @@ final class HomeViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var connectionState: VPNConnectionState = .disconnected
+    @Published var connectedSince: Date?
     @Published var logs: [DebugLogEntry] = []
 
     private let environment: AppEnvironment
+    private var cancellables = Set<AnyCancellable>()
 
     init(environment: AppEnvironment) {
         self.environment = environment
         self.profile = environment.vpnProfile
         self.logs = environment.debugLog.entries
+        self.connectionState = environment.connectionState
+        self.connectedSince = environment.connectedSince
+
+        environment.$connectionState
+            .receive(on: RunLoop.main)
+            .sink { [weak self] state in self?.connectionState = state }
+            .store(in: &cancellables)
+        environment.$connectedSince
+            .receive(on: RunLoop.main)
+            .sink { [weak self] date in self?.connectedSince = date }
+            .store(in: &cancellables)
+        environment.debugLog.$entries
+            .receive(on: RunLoop.main)
+            .sink { [weak self] entries in self?.logs = entries }
+            .store(in: &cancellables)
     }
 
     var progress: Double {
@@ -27,17 +45,16 @@ final class HomeViewModel: ObservableObject {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            async let profile = environment.vpnService.profile()
-            async let usage = environment.vpnService.usage()
-            self.profile = try await profile
-            self.usage = try await usage
+            async let profileResult = environment.vpnService.profile()
+            async let usageResult = environment.vpnService.usage()
+            self.profile = try await profileResult
+            self.usage = try await usageResult
             environment.vpnProfile = self.profile
             connectionState = await environment.networkExtension.currentState()
-            logs = environment.debugLog.entries
+            environment.connectionState = connectionState
         } catch {
             errorMessage = error.localizedDescription
             environment.debugLog.error("Home refresh failed: \(error.localizedDescription)")
-            logs = environment.debugLog.entries
         }
     }
 
@@ -45,25 +62,26 @@ final class HomeViewModel: ObservableObject {
         guard let url = profile?.subscriptionUrl else { return }
         switch connectionState {
         case .connected, .connecting:
+            environment.connectionState = .disconnecting
             await environment.networkExtension.disconnect()
-            connectionState = await environment.networkExtension.currentState()
-            logs = environment.debugLog.entries
-        case .disconnected, .unavailable:
-            connectionState = .connecting
+            let state = await environment.networkExtension.currentState()
+            environment.connectionState = state
+        case .disconnected, .disconnecting, .unavailable:
+            environment.connectionState = .connecting
             do {
+                // Enable VPN on the backend first
+                _ = try? await environment.vpnService.enable()
                 try await environment.networkExtension.connect(subscriptionURL: url)
-                connectionState = await environment.networkExtension.currentState()
-                logs = environment.debugLog.entries
+                let state = await environment.networkExtension.currentState()
+                environment.connectionState = state
             } catch {
-                connectionState = .unavailable(error.localizedDescription)
+                environment.connectionState = .unavailable(error.localizedDescription)
                 environment.debugLog.error("Connect failed: \(error.localizedDescription)")
-                logs = environment.debugLog.entries
             }
         }
     }
 
     func clearLogs() {
         environment.debugLog.clear()
-        logs = []
     }
 }

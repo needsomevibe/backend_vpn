@@ -18,10 +18,12 @@ final class APIClient: @unchecked Sendable {
         self.tokenStore = tokenStore
         self.decoder = JSONDecoder.yeats
         self.encoder = JSONEncoder()
+        self.encoder.keyEncodingStrategy = .convertToSnakeCase
     }
 
     func request<Response: Decodable>(_ endpoint: APIEndpoint) async throws -> Response {
-        try await perform(endpoint, body: nil)
+        let body: Data? = endpoint.method == .post ? Data("{}".utf8) : nil
+        return try await perform(endpoint, body: body)
     }
 
     func request<Body: Encodable, Response: Decodable>(_ endpoint: APIEndpoint, body: Body) async throws -> Response {
@@ -97,6 +99,7 @@ private struct ServerError: Decodable {
 extension JSONDecoder {
     static var yeats: JSONDecoder {
         let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let value = try container.decode(String.self)

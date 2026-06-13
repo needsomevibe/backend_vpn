@@ -22,7 +22,12 @@ enum VPNConnectionState: Equatable {
     case disconnected
     case connecting
     case connected
+    case disconnecting
     case unavailable(String)
+
+    var isActive: Bool {
+        self == .connected || self == .connecting
+    }
 }
 
 protocol NetworkExtensionManaging: Sendable {
