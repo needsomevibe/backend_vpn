@@ -12,3 +12,4 @@ docker-data
 **/*.xcuserstate
 **/.build/
 **/Libbox.xcframework/
+**/PrismCore.xcframework/

@@ -5,8 +5,14 @@ import Foundation
 /// Generates a sing-box JSON configuration from raw subscription content
 /// (base64-decoded proxy URI lines: vless://, vmess://, trojan://, ss://, hy2://).
 enum SingBoxConfigBuilder {
+    struct BuildResult {
+        let config: String
+        let outboundCount: Int
+        let selectedTag: String
+        let selectedServer: String
+    }
 
-    static func build(from rawSubscription: String, selectedIndex: Int = 0) throws -> String {
+    static func build(from rawSubscription: String, selectedIndex: Int = 0) throws -> BuildResult {
         let subscription = normalizedSubscription(rawSubscription)
         let lines = subscription
             .components(separatedBy: .newlines)
@@ -50,7 +56,13 @@ enum SingBoxConfigBuilder {
               let json = String(data: data, encoding: .utf8) else {
             throw SingBoxConfigError.invalidJSON
         }
-        return json
+        let selectedServer = (outbounds[selectedIndex < outbounds.count ? selectedIndex : 0]["server"] as? String) ?? "unknown"
+        return BuildResult(
+            config: json,
+            outboundCount: outbounds.count,
+            selectedTag: mainTag,
+            selectedServer: selectedServer
+        )
     }
 
     // MARK: - Top-Level Sections
@@ -77,7 +89,7 @@ enum SingBoxConfigBuilder {
             "inet4_address": "172.19.0.1/30",
             "inet6_address": "fdfe:dcba:9876::1/126",
             "mtu": 1500,
-            "auto_route": false,
+            "auto_route": true,
             "strict_route": false,
             "stack": "gvisor",
             "sniff": true,

@@ -37,15 +37,31 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
             }
             logInfo("Subscription downloaded, bytes: \(data.count)")
 
-            let config = try SingBoxConfigBuilder.build(from: rawSubscription)
-            logInfo("Generated sing-box config, bytes: \(config.utf8.count)")
+            let buildResult = try SingBoxConfigBuilder.build(from: rawSubscription)
+            let config = buildResult.config
+            logInfo("Generated sing-box config, bytes: \(config.utf8.count), outbounds: \(buildResult.outboundCount), selected: \(buildResult.selectedTag), server: \(buildResult.selectedServer)")
 
-            let box = LibboxNewCommandServer(self as LibboxCommandServerHandlerProtocol, self as LibboxPlatformInterfaceProtocol, nil)
+            var checkError: NSError?
+            if !LibboxCheckConfig(config, &checkError) {
+                throw checkError ?? PacketTunnelError.invalidSingBoxConfig
+            }
+            logInfo("Libbox config validation succeeded")
+
+            try setupLibbox()
+
+            var commandError: NSError?
+            let box = LibboxNewCommandServer(self as LibboxCommandServerHandlerProtocol, self as LibboxPlatformInterfaceProtocol, &commandError)
+            if let commandError {
+                throw commandError
+            }
             guard let box else {
                 throw PacketTunnelError.libboxUnavailable
             }
+            logInfo("Starting Libbox command server")
+            try box.start()
+
             logInfo("Starting Libbox service")
-            try box.startOrReloadService(config, options: nil)
+            try box.startOrReloadService(config, options: LibboxOverrideOptions())
             self.boxService = box
 
             logInfo("VPN started successfully with Sing-Box integration")
@@ -92,6 +108,7 @@ case missingSubscriptionURL
 case invalidSubscriptionData
 case subscriptionHTTPStatus(Int)
 case libboxUnavailable
+case invalidSingBoxConfig
 case missingTunnelFileDescriptor
 case connectionOwnerUnavailable
 case defaultInterfaceMonitorUnavailable
@@ -106,6 +123,8 @@ var errorDescription: String? {
         return "Subscription server returned HTTP \(statusCode)."
     case .libboxUnavailable:
         return "Libbox command server is unavailable."
+    case .invalidSingBoxConfig:
+        return "Generated sing-box config is invalid."
     case .missingTunnelFileDescriptor:
         return "Could not open the packet tunnel file descriptor."
     case .connectionOwnerUnavailable:
@@ -207,20 +226,21 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
     func localDNSTransport() -> (any LibboxLocalDNSTransportProtocol)? { nil }
 
     func openTun(_ options: (any LibboxTunOptionsProtocol)?, ret0_: UnsafeMutablePointer<Int32>?) throws {
+        logInfo("openTun requested by Libbox")
         let settings = buildTunnelSettings(from: options)
         try setTunnelNetworkSettingsBlocking(settings)
         networkSettings = settings
 
         if let fd = self.packetFlow.value(forKeyPath: "socket.fileDescriptor") as? Int32 {
             ret0_?.pointee = fd
-            logInfo("Opened packet tunnel fd from packetFlow socket")
+            logInfo("Opened packet tunnel fd from packetFlow socket: \(fd)")
             return
         }
 
         let fallbackFd = LibboxGetTunnelFileDescriptor()
         if fallbackFd != -1 {
             ret0_?.pointee = fallbackFd
-            logInfo("Opened packet tunnel fd from Libbox fallback")
+            logInfo("Opened packet tunnel fd from Libbox fallback: \(fallbackFd)")
             return
         }
 
@@ -235,6 +255,7 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
     func startDefaultInterfaceMonitor(_ listener: (any LibboxInterfaceUpdateListenerProtocol)?) throws {
         guard let listener else { return }
 
+        logInfo("Starting default interface monitor")
         let monitor = NWPathMonitor()
         pathMonitor = monitor
         monitor.pathUpdateHandler = { [weak self] path in
@@ -258,9 +279,11 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
     private func updateDefaultInterface(_ listener: any LibboxInterfaceUpdateListenerProtocol, path: Network.NWPath) {
         guard path.status != .unsatisfied,
               let defaultInterface = path.availableInterfaces.first else {
+            logInfo("Default interface unavailable")
             listener.updateDefaultInterface("", interfaceIndex: -1, isExpensive: false, isConstrained: false)
             return
         }
+        logInfo("Default interface: \(defaultInterface.name), type: \(defaultInterface.type), expensive: \(path.isExpensive), constrained: \(path.isConstrained)")
         listener.updateDefaultInterface(
             defaultInterface.name,
             interfaceIndex: Int32(defaultInterface.index),
@@ -281,7 +304,12 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
         ipv6.includedRoutes = [NEIPv6Route.default()]
         settings.ipv6Settings = ipv6
 
-        settings.dnsSettings = NEDNSSettings(servers: dnsServers(from: options))
+        let dnsServers = dnsServers(from: options)
+        let dnsSettings = NEDNSSettings(servers: dnsServers)
+        dnsSettings.matchDomains = [""]
+        dnsSettings.matchDomainsNoSearch = true
+        settings.dnsSettings = dnsSettings
+        logInfo("Built tunnel settings: mtu=\(settings.mtu ?? 0), dns=\(dnsServers.joined(separator: ","))")
         return settings
     }
 
@@ -310,6 +338,30 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
             throw capturedError
         }
         logInfo("Tunnel network settings applied")
+    }
+
+    private func setupLibbox() throws {
+        let containerURL = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
+            ?? FileManager.default.temporaryDirectory
+        let baseURL = containerURL.appendingPathComponent("libbox", isDirectory: true)
+        let workURL = baseURL.appendingPathComponent("work", isDirectory: true)
+        let tempURL = baseURL.appendingPathComponent("tmp", isDirectory: true)
+        try FileManager.default.createDirectory(at: workURL, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: tempURL, withIntermediateDirectories: true)
+
+        let options = LibboxSetupOptions()
+        options.basePath = baseURL.path
+        options.workingPath = workURL.path
+        options.tempPath = tempURL.path
+        options.logMaxLines = 1000
+        options.debug = true
+
+        var setupError: NSError?
+        if !LibboxSetup(options, &setupError) {
+            throw setupError ?? PacketTunnelError.libboxUnavailable
+        }
+        logInfo("Libbox setup completed at \(baseURL.path)")
     }
 
     private func logInfo(_ message: String) {

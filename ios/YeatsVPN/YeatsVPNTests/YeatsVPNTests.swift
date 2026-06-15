@@ -29,12 +29,17 @@ final class YeatsVPNTests: XCTestCase {
 
         try await store.save(accessToken: "access", refreshToken: "refresh")
 
-        XCTAssertEqual(await store.accessToken(), "access")
-        XCTAssertEqual(await store.refreshToken(), "refresh")
-        XCTAssertTrue(await store.hasRefreshToken())
+        let accessToken = await store.accessToken()
+        let refreshToken = await store.refreshToken()
+        let hasRefreshToken = await store.hasRefreshToken()
+
+        XCTAssertEqual(accessToken, "access")
+        XCTAssertEqual(refreshToken, "refresh")
+        XCTAssertTrue(hasRefreshToken)
 
         await store.clear()
-        XCTAssertNil(await store.accessToken())
+        let clearedAccessToken = await store.accessToken()
+        XCTAssertNil(clearedAccessToken)
     }
 }
 
