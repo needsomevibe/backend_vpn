@@ -82,24 +82,24 @@ final class HomeViewModel: ObservableObject {
         // Re-check actual NE status to avoid acting on stale UI state
         let freshState = await environment.networkExtension.currentState()
         if freshState != connectionState {
-            environment.connectionState = freshState
+            syncConnectionState(freshState)
         }
 
         switch freshState {
         case .connected, .connecting:
-            environment.connectionState = .disconnecting
+            syncConnectionState(.disconnecting)
             await environment.networkExtension.disconnect()
             let state = await environment.networkExtension.currentState()
-            environment.connectionState = state
+            syncConnectionState(state)
         case .disconnected, .disconnecting, .unavailable:
-            environment.connectionState = .connecting
+            syncConnectionState(.connecting)
             do {
                 environment.debugLog.clear()
                 environment.debugLog.info("Starting fresh VPN connection attempt")
                 try await environment.networkExtension.connect(subscriptionURL: url)
                 try? await Task.sleep(for: .seconds(1))
                 let state = await environment.networkExtension.currentState()
-                environment.connectionState = state
+                syncConnectionState(state)
                 environment.debugLog.importExtensionLogs()
                 if state == .connected {
                     // Drop DNS/connection state cached while the tunnel was
@@ -111,7 +111,7 @@ final class HomeViewModel: ObservableObject {
                     await refresh()
                 }
             } catch {
-                environment.connectionState = .unavailable(error.localizedDescription)
+                syncConnectionState(.unavailable(error.localizedDescription))
                 environment.debugLog.error("Connect failed: \(error.localizedDescription)")
                 environment.debugLog.importExtensionLogs()
             }
@@ -120,5 +120,14 @@ final class HomeViewModel: ObservableObject {
 
     func clearLogs() {
         environment.debugLog.clear()
+    }
+
+    private func syncConnectionState(_ state: VPNConnectionState) {
+        environment.connectionState = state
+        if state == .connected && environment.connectedSince == nil {
+            environment.connectedSince = Date()
+        } else if state == .disconnected || state == .disconnecting {
+            environment.connectedSince = nil
+        }
     }
 }

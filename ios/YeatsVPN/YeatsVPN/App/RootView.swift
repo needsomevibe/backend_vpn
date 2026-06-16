@@ -25,24 +25,27 @@ struct MainVPNView: View {
     @EnvironmentObject private var environment: AppEnvironment
     @StateObject var viewModel: HomeViewModel
     @State private var activeSheet: MainSheet?
+    @State private var isPressed = false
 
     var body: some View {
         ZStack {
-            Color(uiColor: .systemBackground)
+            Color(uiColor: .systemGroupedBackground)
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 header
+                Spacer(minLength: 30)
+                statusBlock
+                Spacer(minLength: 24)
+                connectButton
                 Spacer(minLength: 28)
-                brand
-                Spacer(minLength: 44)
-                connectionToggle
-                statusCopy
-                Spacer(minLength: 28)
-                detailsPanel
+                metricsGrid
+                Spacer(minLength: 18)
+                quickActions
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 14)
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 18)
         }
         .task { await viewModel.refresh() }
         .refreshable { await viewModel.refresh() }
@@ -62,166 +65,169 @@ struct MainVPNView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Yeats")
-                    .font(.system(size: 34, weight: .black))
-                Text("VPN")
-                    .font(.system(size: 18, weight: .heavy))
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Yeats VPN")
+                    .font(.title2.weight(.bold))
+                Text(headerSubtitle)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
 
-            HStack(spacing: 16) {
-                iconButton("terminal.fill", sheet: .logs)
-                iconButton("questionmark.circle", sheet: .help)
-                iconButton("line.3.horizontal", sheet: .menu)
+            HStack(spacing: 8) {
+                iconButton("list.bullet.rectangle", sheet: .logs)
+                iconButton("ellipsis", sheet: .menu)
             }
         }
     }
 
-    private var brand: some View {
-        VStack(spacing: 16) {
-            Text("YEATS")
-                .font(.system(size: 70, weight: .black))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.red, .orange],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-            if viewModel.connectionState == .connected {
-                Text("Private tunnel is active.")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(.primary)
-            } else {
-                Text("Your Internet is not private.")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(.primary)
+    private var statusBlock: some View {
+        VStack(spacing: 12) {
+            statusBadge
+
+            Text(statusTitle)
+                .font(.system(size: 38, weight: .bold, design: .rounded))
+                .contentTransition(.opacity)
+
+            Text(statusSubtitle)
+                .font(.body.weight(.medium))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: 280)
+
+            if let since = viewModel.connectedSince, viewModel.connectionState == .connected {
+                ConnectedDurationView(since: since)
+                    .padding(.top, 4)
             }
         }
     }
 
-    private var connectionToggle: some View {
+    private var statusBadge: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(stateColor)
+                .frame(width: 8, height: 8)
+            Text(statusTitle.uppercased())
+                .font(.caption.weight(.bold))
+        }
+        .foregroundStyle(stateColor)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 8)
+        .background(stateColor.opacity(0.12), in: Capsule())
+        .overlay {
+            Capsule()
+                .stroke(stateColor.opacity(0.18), lineWidth: 1)
+        }
+    }
+
+    private var connectButton: some View {
         Button {
             Task { await viewModel.connectTapped() }
         } label: {
-            ZStack(alignment: toggleAlignment) {
-                Capsule()
-                    .fill(toggleTrack)
-                    .frame(width: 222, height: 112)
-                    .shadow(color: toggleShadow.opacity(0.18), radius: 22, y: 12)
+            ZStack {
+                Circle()
+                    .fill(buttonFill)
+                    .frame(width: 194, height: 194)
+                    .shadow(color: stateColor.opacity(viewModel.connectionState == .disconnected ? 0.14 : 0.28), radius: 34, y: 18)
 
                 Circle()
-                    .fill(Color(uiColor: .systemBackground))
-                    .frame(width: 96, height: 96)
-                    .shadow(color: .black.opacity(0.16), radius: 12, y: 6)
-                    .overlay {
-                        if viewModel.connectionState == .connecting || viewModel.connectionState == .disconnecting {
-                            ProgressView()
-                                .tint(.secondary)
-                        }
-                    }
-                    .padding(.horizontal, 8)
+                    .strokeBorder(.white.opacity(0.34), lineWidth: 1)
+                    .frame(width: 194, height: 194)
+
+                if viewModel.connectionState == .connecting || viewModel.connectionState == .disconnecting {
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(1.45)
+                } else {
+                    Image(systemName: buttonSymbol)
+                        .font(.system(size: 58, weight: .bold))
+                        .foregroundStyle(.white)
+                        .symbolEffect(.bounce, value: viewModel.connectionState == .connected)
+                }
             }
-            .frame(width: 222, height: 112)
-            .animation(.snappy(duration: 0.28), value: viewModel.connectionState)
+            .scaleEffect(isPressed ? 0.96 : 1)
+            .animation(.smooth(duration: 0.18), value: isPressed)
+            .animation(.snappy(duration: 0.32), value: viewModel.connectionState)
         }
         .buttonStyle(.plain)
         .disabled(viewModel.connectionState == .connecting || viewModel.connectionState == .disconnecting)
-    }
-
-    private var statusCopy: some View {
-        VStack(spacing: 8) {
-            Text(statusTitle)
-                .font(.system(size: 28, weight: .black))
-            if let since = viewModel.connectedSince, viewModel.connectionState == .connected {
-                ConnectionTimer(since: since)
-            } else {
-                Text(statusSubtitle)
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.top, 18)
-    }
-
-    private var detailsPanel: some View {
-        VStack(spacing: 14) {
-            Capsule()
-                .fill(.secondary.opacity(0.35))
-                .frame(width: 42, height: 5)
-
-            HStack {
-                detailButton(
-                    title: "Traffic",
-                    value: "\(usedTraffic) / \(trafficLimit)",
-                    icon: "arrow.up.arrow.down",
-                    sheet: .logs
-                )
-                Divider().frame(height: 42)
-                detailButton(
-                    title: "Server",
-                    value: serverName,
-                    icon: "server.rack",
-                    sheet: .servers
-                )
-                Divider().frame(height: 42)
-                detailButton(
-                    title: "Expires",
-                    value: viewModel.profile?.expiresAt?.shortDisplay ?? "-",
-                    icon: "calendar",
-                    sheet: .profile
-                )
-            }
-        }
-        .padding(.top, 14)
-        .padding(.horizontal, 16)
-        .padding(.bottom, 26)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 34, style: .continuous)
-                .fill(Color(uiColor: .secondarySystemBackground))
-                .shadow(color: .black.opacity(0.12), radius: 28, y: -8)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
         )
     }
 
-    private func iconButton(_ systemImage: String, sheet: MainSheet) -> some View {
-        Button {
-            activeSheet = sheet
-        } label: {
-            Image(systemName: systemImage)
-                .font(.system(size: 23, weight: .bold))
-                .foregroundStyle(.primary)
-                .frame(width: 34, height: 34)
+    private var metricsGrid: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                MetricTile(
+                    title: "Traffic",
+                    value: usedTraffic,
+                    footnote: trafficLimit,
+                    icon: "arrow.up.arrow.down",
+                    tint: DS.blue
+                ) {
+                    activeSheet = .logs
+                }
+                MetricTile(
+                    title: "Server",
+                    value: serverName,
+                    footnote: environment.servers.isEmpty ? "No servers" : "\(environment.servers.count) available",
+                    icon: "server.rack",
+                    tint: .purple
+                ) {
+                    activeSheet = .servers
+                }
+            }
+
+            HStack(spacing: 12) {
+                MetricTile(
+                    title: "Expires",
+                    value: viewModel.profile?.expiresAt?.shortDisplay ?? "-",
+                    footnote: "Subscription",
+                    icon: "calendar",
+                    tint: .orange
+                ) {
+                    activeSheet = .profile
+                }
+                MetricTile(
+                    title: "Status",
+                    value: statusTitle,
+                    footnote: viewModel.profile?.status.capitalized ?? "VPN",
+                    icon: "shield.lefthalf.filled",
+                    tint: stateColor
+                ) {
+                    activeSheet = .help
+                }
+            }
         }
-        .buttonStyle(.plain)
     }
 
-    private func detailButton(title: String, value: String, icon: String, sheet: MainSheet) -> some View {
-        Button {
-            activeSheet = sheet
-        } label: {
-            VStack(spacing: 7) {
-                Image(systemName: icon)
-                    .font(.headline)
-                    .foregroundStyle(.secondary)
-                Text(title)
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.secondary)
-                Text(value)
-                    .font(.caption.weight(.heavy))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+    private var quickActions: some View {
+        HStack(spacing: 12) {
+            Button {
+                activeSheet = .servers
+            } label: {
+                Label("Servers", systemImage: "server.rack")
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 72)
-            .contentShape(Rectangle())
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+
+            Button {
+                Task { await viewModel.refresh() }
+            } label: {
+                if viewModel.isLoading {
+                    ProgressView()
+                } else {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
         }
-        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -247,25 +253,69 @@ struct MainVPNView: View {
         }
     }
 
-    private var toggleAlignment: Alignment {
-        viewModel.connectionState == .connected ? .trailing : .leading
+    private func iconButton(_ systemImage: String, sheet: MainSheet) -> some View {
+        Button {
+            activeSheet = sheet
+        } label: {
+            Image(systemName: systemImage)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 38, height: 38)
+                .background(.thinMaterial, in: Circle())
+        }
+        .buttonStyle(.plain)
     }
 
-    private var toggleTrack: Color {
+    private var stateColor: Color {
         switch viewModel.connectionState {
         case .connected:
-            .green.opacity(0.82)
+            .green
         case .connecting, .disconnecting:
-            .orange.opacity(0.30)
+            .orange
         case .unavailable:
-            .red.opacity(0.24)
+            .red
         case .disconnected:
-            Color(uiColor: .systemGray5)
+            DS.blue
         }
     }
 
-    private var toggleShadow: Color {
-        viewModel.connectionState == .connected ? .green : .black
+    private var buttonFill: LinearGradient {
+        switch viewModel.connectionState {
+        case .connected:
+            LinearGradient(colors: [.green, .mint], startPoint: .topLeading, endPoint: .bottomTrailing)
+        case .connecting, .disconnecting:
+            LinearGradient(colors: [.orange, .yellow], startPoint: .topLeading, endPoint: .bottomTrailing)
+        case .unavailable:
+            LinearGradient(colors: [.red, .pink], startPoint: .topLeading, endPoint: .bottomTrailing)
+        case .disconnected:
+            LinearGradient(colors: [DS.blue, DS.cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+    }
+
+    private var buttonSymbol: String {
+        switch viewModel.connectionState {
+        case .connected:
+            "checkmark.shield.fill"
+        case .unavailable:
+            "exclamationmark.triangle.fill"
+        default:
+            "power"
+        }
+    }
+
+    private var headerSubtitle: String {
+        switch viewModel.connectionState {
+        case .connected:
+            "Secure tunnel running"
+        case .connecting:
+            "Preparing connection"
+        case .disconnecting:
+            "Stopping connection"
+        case .disconnected:
+            "Ready when you are"
+        case .unavailable:
+            "Needs attention"
+        }
     }
 
     private var statusTitle: String {
@@ -280,10 +330,10 @@ struct MainVPNView: View {
 
     private var statusSubtitle: String {
         switch viewModel.connectionState {
-        case .connected: "Your traffic is protected."
-        case .connecting: "Starting secure tunnel..."
-        case .disconnecting: "Closing secure tunnel..."
-        case .disconnected: "Tap the switch to connect."
+        case .connected: "Your connection is private and routed through Yeats VPN."
+        case .connecting: "Setting up the secure tunnel."
+        case .disconnecting: "Closing the tunnel cleanly."
+        case .disconnected: "Tap the button to protect your connection."
         case let .unavailable(message): message
         }
     }
@@ -301,6 +351,80 @@ struct MainVPNView: View {
             return location
         }
         return environment.servers.first?.displayName ?? "-"
+    }
+}
+
+private struct ConnectedDurationView: View {
+    let since: Date
+
+    var body: some View {
+        TimelineView(.periodic(from: since, by: 1)) { context in
+            Text(duration(from: since, to: context.date))
+                .font(.system(size: 22, weight: .semibold, design: .monospaced))
+                .foregroundStyle(DS.blue)
+                .contentTransition(.numericText())
+                .animation(.linear(duration: 0.2), value: duration(from: since, to: context.date))
+        }
+        .accessibilityLabel("Connected for")
+    }
+
+    private func duration(from start: Date, to end: Date) -> String {
+        let elapsed = max(0, Int(end.timeIntervalSince(start)))
+        let hours = elapsed / 3600
+        let minutes = (elapsed % 3600) / 60
+        let seconds = elapsed % 60
+
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        }
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
+
+private struct MetricTile: View {
+    let title: String
+    let value: String
+    let footnote: String
+    let icon: String
+    let tint: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: icon)
+                        .font(.headline)
+                        .foregroundStyle(tint)
+                        .frame(width: 30, height: 30)
+                        .background(tint.opacity(0.12), in: Circle())
+                    Spacer()
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text(value)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                    Text(footnote)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 132, alignment: .leading)
+            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color(uiColor: .separator).opacity(0.16), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
 
