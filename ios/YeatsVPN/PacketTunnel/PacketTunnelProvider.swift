@@ -13,6 +13,10 @@ private var boxService: LibboxCommandServer?
 private var networkSettings: NEPacketTunnelNetworkSettings?
 private var pathMonitor: NWPathMonitor?
 private var recentLogLines: [String] = []
+// Guards `recentLogLines` and the extension log file. Logs arrive concurrently
+// from the startup task, the NWPathMonitor queue and libbox's own threads;
+// unsynchronised Array mutation here corrupts the heap and crashes the extension.
+private let logLock = NSLock()
 private var startupPhase: StartupPhase = .idle
 private var lastStartupError: String?
 
@@ -275,7 +279,7 @@ private func statusResponseData() -> Data {
         startupPhase: startupPhase.rawValue,
         lastError: lastStartupError,
         subscriptionURL: subscriptionURL,
-        logs: recentLogLines
+        logs: snapshotLogs()
     )
 
     if let data = try? JSONEncoder().encode(status) {
@@ -673,12 +677,17 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
         }
 
         let line = "\(Self.timestamp()) [\(level)] \(message)\n"
+        let fileURL = containerURL.appendingPathComponent(extensionLogFileName)
+        guard let data = line.data(using: .utf8) else { return }
+
+        // Serialise buffer mutation and file I/O — see `logLock`.
+        logLock.lock()
+        defer { logLock.unlock() }
+
         recentLogLines.append(line.trimmingCharacters(in: .newlines))
         if recentLogLines.count > 80 {
             recentLogLines.removeFirst(recentLogLines.count - 80)
         }
-        let fileURL = containerURL.appendingPathComponent(extensionLogFileName)
-        guard let data = line.data(using: .utf8) else { return }
 
         if FileManager.default.fileExists(atPath: fileURL.path),
            let handle = try? FileHandle(forWritingTo: fileURL) {
@@ -688,6 +697,12 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
         } else {
             try? data.write(to: fileURL, options: [.atomic])
         }
+    }
+
+    private func snapshotLogs() -> [String] {
+        logLock.lock()
+        defer { logLock.unlock() }
+        return recentLogLines
     }
 
     private static func timestamp() -> String {
