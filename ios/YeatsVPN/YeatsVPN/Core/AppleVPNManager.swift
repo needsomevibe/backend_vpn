@@ -74,8 +74,13 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
     func disconnect() async {
         do {
             await logInfo("Disconnect requested")
-            let manager = try await loadManager()
-            manager?.connection.stopVPNTunnel()
+            guard let manager = try await loadManager() else { return }
+            // Disable On-Demand before stopping — otherwise iOS will reconnect immediately
+            if manager.isOnDemandEnabled {
+                manager.isOnDemandEnabled = false
+                try? await save(manager)
+            }
+            manager.connection.stopVPNTunnel()
             await logInfo("stopVPNTunnel called")
         } catch {
             await logError("Disconnect failed: \(error.localizedDescription)")
@@ -133,6 +138,8 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         proto.providerBundleIdentifier = providerBundleIdentifier
         proto.serverAddress = "Yeats VPN"
         proto.disconnectOnSleep = false
+        proto.includeAllNetworks = true
+        proto.excludeLocalNetworks = true
         proto.providerConfiguration = [
             PacketTunnelKeys.subscriptionURL: subscriptionURL
         ]
@@ -140,7 +147,8 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         manager.localizedDescription = localizedDescription
         manager.protocolConfiguration = proto
         manager.isEnabled = true
-        manager.isOnDemandEnabled = false
+        manager.isOnDemandEnabled = true
+        manager.onDemandRules = [NEOnDemandRuleConnect()]
         return manager
     }
 
