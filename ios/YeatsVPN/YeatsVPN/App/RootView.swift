@@ -270,9 +270,6 @@ struct MainVPNView: View {
         case .menu:
             MainMenuSheet(activeSheet: $activeSheet)
                 .environmentObject(environment)
-        case .profile:
-            ProfileView(viewModel: ProfileViewModel(environment: environment))
-                .environmentObject(environment)
         case .settings:
             SettingsView()
                 .environmentObject(environment)
@@ -495,7 +492,6 @@ private struct ServerCard: View {
 
 private enum MainSheet: String, Identifiable {
     case menu
-    case profile
     case settings
     case help
 
@@ -505,7 +501,7 @@ private enum MainSheet: String, Identifiable {
         switch self {
         case .menu:
             [.medium]
-        case .profile, .settings:
+        case .settings:
             [.medium, .large]
         case .help:
             [.fraction(0.34), .medium]
@@ -521,11 +517,6 @@ private struct MainMenuSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Button {
-                    present(.profile)
-                } label: {
-                    Label("Profile", systemImage: "person.crop.circle")
-                }
                 Button {
                     present(.help)
                 } label: {

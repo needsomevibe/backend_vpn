@@ -70,6 +70,12 @@ final class AuthViewModel: ObservableObject {
                 fullName: fullName.isEmpty ? nil : fullName
             )
             environment.handleAuthenticated(response)
+        } catch let authError as ASAuthorizationError where authError.code == .canceled {
+            errorMessage = nil
+        } catch let authError as ASAuthorizationError {
+            errorMessage = "Could not sign in with Apple (\(authError.code.rawValue)). Please try again."
+        } catch APIError.unauthorized {
+            errorMessage = "Sign in with Apple failed. Please try again."
         } catch {
             errorMessage = error.localizedDescription
         }
