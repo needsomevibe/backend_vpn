@@ -125,6 +125,12 @@ export class RemnawaveService {
   }
 
   private async updateStatus(uuid: string, status: 'ACTIVE' | 'DISABLED', actionUrl: string) {
+    const current = await this.getUserByUuid(uuid);
+    if (current.status === status) {
+      this.logger.log(`User ${uuid} already ${status}; skipping Remnawave status action`);
+      return current;
+    }
+
     try {
       const response = await this.request<AnyRecord>({ method: 'POST', url: actionUrl });
       return this.normalizeUser(response);
