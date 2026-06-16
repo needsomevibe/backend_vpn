@@ -107,7 +107,7 @@ final class VPNViewModel: ObservableObject {
         actionMessage = message
         Task {
             try? await Task.sleep(for: .seconds(2))
-            actionMessage = nil
+            self.actionMessage = nil
         }
     }
 }
