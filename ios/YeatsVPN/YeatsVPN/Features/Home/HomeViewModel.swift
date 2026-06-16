@@ -86,12 +86,16 @@ final class HomeViewModel: ObservableObject {
             do {
                 environment.debugLog.clear()
                 environment.debugLog.info("Starting fresh VPN connection attempt")
-                _ = try? await environment.vpnService.enable()
                 try await environment.networkExtension.connect(subscriptionURL: url)
                 try? await Task.sleep(for: .seconds(1))
                 let state = await environment.networkExtension.currentState()
                 environment.connectionState = state
                 environment.debugLog.importExtensionLogs()
+                // Notify backend after tunnel is confirmed up — request goes through
+                // TUN → direct outbound, avoiding NECP policy block on en0
+                if state == .connected {
+                    Task { _ = try? await environment.vpnService.enable() }
+                }
             } catch {
                 environment.connectionState = .unavailable(error.localizedDescription)
                 environment.debugLog.error("Connect failed: \(error.localizedDescription)")
