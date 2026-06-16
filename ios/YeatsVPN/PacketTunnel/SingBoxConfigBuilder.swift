@@ -40,7 +40,7 @@ enum SingBoxConfigBuilder {
             "outbounds": tags,
             "default": mainTag,
         ]
-        let direct: [String: Any] = ["type": "direct", "tag": "direct"]
+        let direct: [String: Any] = ["type": "direct", "tag": "direct", "domain_strategy": "prefer_ipv4"]
 
         let config: [String: Any] = [
             "log": ["level": "info", "timestamp": true],
@@ -69,7 +69,7 @@ enum SingBoxConfigBuilder {
         [
             "servers": [
                 ["type": "https", "tag": "dns-remote", "server": "1.1.1.1", "detour": "proxy"],
-                ["type": "https", "tag": "dns-direct", "server": "1.1.1.1", "detour": "direct"],
+                ["type": "udp", "tag": "dns-direct", "server": "1.1.1.1", "detour": "direct"],
             ],
             "rules": [
                 ["action": "route", "server": "dns-remote"],
