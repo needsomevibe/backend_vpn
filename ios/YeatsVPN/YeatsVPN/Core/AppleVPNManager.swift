@@ -109,6 +109,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
             guard let connection = notification.object as? NEVPNConnection else { return }
             let state = self?.mapStatus(connection.status) ?? .disconnected
             self?.onStateChange?(state)
+            Task { await self?.logInfo("NE status changed: \(connection.status.rawValue)") }
         }
     }
 
@@ -149,8 +150,6 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         proto.providerBundleIdentifier = providerBundleIdentifier
         proto.serverAddress = "Yeats VPN"
         proto.disconnectOnSleep = false
-        proto.includeAllNetworks = true
-        proto.excludeLocalNetworks = true
         proto.providerConfiguration = [
             PacketTunnelKeys.subscriptionURL: subscriptionURL
         ]
