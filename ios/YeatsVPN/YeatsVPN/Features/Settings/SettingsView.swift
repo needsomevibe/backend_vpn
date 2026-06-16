@@ -42,6 +42,17 @@ struct SettingsView: View {
                 } header: {
                     Label("About", systemImage: "info.circle")
                 }
+
+                Section {
+                    Button(role: .destructive) {
+                        dismiss()
+                        Task { await environment.logout() }
+                    } label: {
+                        Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+                } header: {
+                    Label("Account", systemImage: "person.crop.circle")
+                }
             }
             .scrollContentBackground(.hidden)
             .background(AmbientBackground())

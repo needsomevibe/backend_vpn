@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 export type AppleIdentity = {
   subject: string;
-  email: string;
+  email: string | null;
   emailVerified: boolean;
 };
 
@@ -26,12 +26,14 @@ export class AppleTokenService {
       if (!payload.sub || typeof payload.sub !== 'string') {
         throw new UnauthorizedException('Apple identity token is missing subject');
       }
-      if (!payload.email || typeof payload.email !== 'string') {
-        throw new UnauthorizedException('Apple identity token is missing email');
-      }
+      // Apple only includes the email claim on the very first authorization for
+      // an app. Returning sign-ins carry only `sub`, so email is optional here
+      // and resolved against the existing account by Apple subject instead.
+      const email =
+        typeof payload.email === 'string' ? payload.email.toLowerCase() : null;
       return {
         subject: payload.sub,
-        email: payload.email.toLowerCase(),
+        email,
         emailVerified: payload.email_verified === true || payload.email_verified === 'true',
       };
     } catch (error) {

@@ -172,4 +172,57 @@ describe('AuthService', () => {
     );
     expect(result.accessToken).toEqual(expect.any(String));
   });
+
+  it('signs in a returning Apple user when the token has no email', async () => {
+    // Apple omits the email claim on every sign-in after the first one.
+    appleTokenService.verifyIdentityToken.mockResolvedValue({
+      subject: 'apple-subject',
+      email: null,
+      emailVerified: false,
+    });
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'apple-user-12345678',
+      email: 'apple@example.com',
+      status: 'ACTIVE',
+      passwordHash: null,
+      appleSubject: 'apple-subject',
+    });
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      id: 'apple-user-12345678',
+      email: 'apple@example.com',
+      status: 'ACTIVE',
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      vpnAccount: null,
+      subscriptions: [],
+    });
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AuthService,
+        JwtService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: RemnawaveService, useValue: remnawave },
+        { provide: AppleTokenService, useValue: appleTokenService },
+        { provide: ConfigService, useValue: { getOrThrow: jest.fn() } },
+      ],
+    })
+      .overrideProvider(ConfigService)
+      .useValue({
+        getOrThrow: (key: string) =>
+          key === 'JWT_ACCESS_SECRET' ? 'access-secret' : 'refresh-secret',
+      })
+      .compile();
+
+    const service = moduleRef.get(AuthService);
+    const result = await service.loginWithApple({
+      identityToken: 'identity-token',
+      deviceId: 'device-apple',
+    });
+
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { appleSubject: 'apple-subject' },
+    });
+    expect(result.accessToken).toEqual(expect.any(String));
+  });
 });

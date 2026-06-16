@@ -94,11 +94,13 @@ export class AuthService {
 
   async loginWithApple(dto: AppleLoginDto) {
     const identity = await this.appleTokenService.verifyIdentityToken(dto.identityToken);
+    // Apple subject is stable and always present, so it is the primary key for
+    // returning sign-ins (where the token no longer carries the email claim).
     let user = await this.prisma.user.findUnique({
       where: { appleSubject: identity.subject },
     });
 
-    if (!user) {
+    if (!user && identity.email) {
       const existingByEmail = await this.prisma.user.findUnique({
         where: { email: identity.email },
       });
@@ -120,9 +122,13 @@ export class AuthService {
       if (!plan) {
         throw new ConflictException('Default plan is not configured');
       }
+      // New account with a hidden email (e.g. the user already authorized the
+      // app before, so Apple withholds it): synthesize a stable unique address
+      // from the Apple subject so provisioning still has a username.
+      const email = identity.email ?? `${identity.subject}@appleid.local`;
       user = await this.prisma.user.create({
         data: {
-          email: identity.email,
+          email,
           passwordHash: null,
           appleSubject: identity.subject,
           authProvider: 'apple',
