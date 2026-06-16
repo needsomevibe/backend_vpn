@@ -69,7 +69,13 @@ final class APIClient: @unchecked Sendable {
             return try decode(data, response: http)
         } catch let error as APIError {
             throw error
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         } catch {
+            let nsError = error as NSError
+            if nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled {
+                throw CancellationError()
+            }
             throw APIError.transport(error.localizedDescription)
         }
     }

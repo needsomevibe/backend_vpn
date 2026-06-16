@@ -49,6 +49,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     func refresh() async {
+        guard !isLoading else { return }
         environment.debugLog.importExtensionLogs()
         isLoading = true
         errorMessage = nil
@@ -61,9 +62,13 @@ final class HomeViewModel: ObservableObject {
             self.usage = freshUsage
             self.profile = freshProfile.applying(usage: freshUsage)
             environment.vpnProfile = self.profile
-            if let url = self.profile?.subscriptionUrl, !url.isEmpty {
+            if connectionState.isActive, let url = self.profile?.subscriptionUrl, !url.isEmpty {
                 try? await environment.networkExtension.refreshConfiguration(subscriptionURL: url)
             }
+        } catch is CancellationError {
+            return
+        } catch APIError.transport(let message) where message.lowercased() == "cancelled" {
+            return
         } catch {
             errorMessage = error.localizedDescription
             environment.debugLog.error("Home refresh failed: \(error.localizedDescription)")
