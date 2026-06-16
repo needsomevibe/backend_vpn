@@ -46,7 +46,7 @@ struct RegisterView: View {
                 }
                 .padding(24)
             }
-            .background(DS.background)
+            .background(AmbientBackground())
         }
     }
 }

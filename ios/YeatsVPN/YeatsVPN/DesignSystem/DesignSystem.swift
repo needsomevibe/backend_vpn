@@ -23,6 +23,26 @@ enum DS {
     }
 
     static let radius: CGFloat = 28
+    static let cardRadius: CGFloat = 24
+    static let tileRadius: CGFloat = 22
+
+    /// Specular top-light edge that sells the glass illusion on material surfaces.
+    static var glassStroke: LinearGradient {
+        LinearGradient(
+            colors: [.white.opacity(0.55), .white.opacity(0.12), .white.opacity(0.04)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    /// Soft sheen layered over a material to add the wet-glass highlight.
+    static var glassSheen: LinearGradient {
+        LinearGradient(
+            colors: [.white.opacity(0.18), .clear, .clear],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
 }
 
 extension Date {

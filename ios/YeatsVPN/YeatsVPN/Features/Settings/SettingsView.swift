@@ -49,6 +49,8 @@ struct SettingsView: View {
                     Label("About", systemImage: "info.circle")
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AmbientBackground())
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

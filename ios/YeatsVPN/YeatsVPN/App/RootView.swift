@@ -5,7 +5,7 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            DS.background.ignoresSafeArea()
+            AmbientBackground()
             switch environment.route {
             case .splash:
                 SplashView()
@@ -29,8 +29,7 @@ struct MainVPNView: View {
 
     var body: some View {
         ZStack {
-            Color(uiColor: .systemGroupedBackground)
-                .ignoresSafeArea()
+            AmbientBackground(tint: stateColor)
 
             VStack(spacing: 14) {
                 header
@@ -48,6 +47,7 @@ struct MainVPNView: View {
             sheetView(sheet)
                 .presentationDetents(sheet.detents)
                 .presentationDragIndicator(.visible)
+                .presentationBackground(.ultraThinMaterial)
         }
         .overlay(alignment: .top) {
             if let error = viewModel.errorMessage {
@@ -57,6 +57,8 @@ struct MainVPNView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
+        .animation(.snappy(duration: 0.3), value: viewModel.connectionState)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: viewModel.errorMessage)
     }
 
     private var header: some View {
@@ -126,13 +128,23 @@ struct MainVPNView: View {
         } label: {
             ZStack {
                 Circle()
-                    .fill(buttonFill)
-                    .frame(width: 142, height: 142)
-                    .shadow(color: stateColor.opacity(viewModel.connectionState == .disconnected ? 0.12 : 0.22), radius: 24, y: 12)
+                    .fill(stateColor)
+                    .frame(width: 196, height: 196)
+                    .blur(radius: 46)
+                    .opacity(glowOpacity)
 
-                Circle()
-                    .strokeBorder(.white.opacity(0.34), lineWidth: 1)
-                    .frame(width: 142, height: 142)
+                ConnectionRings(color: stateColor, isActive: ringsActive)
+                    .frame(width: 178, height: 178)
+
+                ZStack {
+                    Circle().fill(buttonFill)
+                    Circle().fill(DS.glassSheen)
+                }
+                .frame(width: 142, height: 142)
+                .overlay {
+                    Circle().strokeBorder(.white.opacity(0.4), lineWidth: 1.2)
+                }
+                .shadow(color: stateColor.opacity(0.38), radius: 26, y: 14)
 
                 if viewModel.connectionState == .connecting || viewModel.connectionState == .disconnecting {
                     ProgressView()
@@ -145,7 +157,7 @@ struct MainVPNView: View {
                         .symbolEffect(.bounce, value: viewModel.connectionState == .connected)
                 }
             }
-            .scaleEffect(isPressed ? 0.96 : 1)
+            .scaleEffect(isPressed ? 0.95 : 1)
             .animation(.smooth(duration: 0.18), value: isPressed)
             .animation(.snappy(duration: 0.32), value: viewModel.connectionState)
         }
@@ -156,6 +168,22 @@ struct MainVPNView: View {
                 .onChanged { _ in isPressed = true }
                 .onEnded { _ in isPressed = false }
         )
+    }
+
+    private var ringsActive: Bool {
+        switch viewModel.connectionState {
+        case .connected, .connecting, .disconnecting: true
+        default: false
+        }
+    }
+
+    private var glowOpacity: Double {
+        switch viewModel.connectionState {
+        case .connected: 0.5
+        case .connecting, .disconnecting: 0.4
+        case .unavailable: 0.35
+        case .disconnected: 0.18
+        }
     }
 
     private var metricsGrid: some View {
@@ -247,11 +275,14 @@ struct MainVPNView: View {
             Image(systemName: systemImage)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.primary)
-                .frame(width: 40, height: 40)
-                .background(Color(uiColor: .secondarySystemGroupedBackground), in: Circle())
-                .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
+                .frame(width: 42, height: 42)
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay { Circle().fill(DS.glassSheen) }
+                .overlay { Circle().strokeBorder(DS.glassStroke, lineWidth: 1) }
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
     }
 
     private var stateColor: Color {
@@ -402,14 +433,9 @@ private struct MetricTile: View {
                     .minimumScaleFactor(0.72)
             }
         }
-        .padding(13)
+        .padding(14)
         .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color(uiColor: .separator).opacity(0.14), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.025), radius: 10, y: 5)
+        .glassSurface(cornerRadius: DS.tileRadius, strokeOpacity: 0.8)
     }
 }
 
@@ -441,16 +467,15 @@ private struct QuickActionButton: View {
                     .minimumScaleFactor(0.82)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 48)
+            .frame(height: 50)
             .foregroundStyle(foreground)
-            .background(background, in: Capsule())
-            .overlay {
-                Capsule()
-                    .stroke(border, lineWidth: 1)
-            }
+            .background(background)
+            .overlay { Capsule().fill(DS.glassSheen) }
+            .clipShape(Capsule())
+            .overlay { Capsule().strokeBorder(border, lineWidth: 1) }
             .shadow(color: shadow, radius: 14, y: 7)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
         .disabled(isLoading)
     }
 
@@ -458,16 +483,22 @@ private struct QuickActionButton: View {
         style == .primary ? .white : DS.blue
     }
 
-    private var background: Color {
-        style == .primary ? DS.blue : Color(uiColor: .secondarySystemGroupedBackground)
+    @ViewBuilder
+    private var background: some View {
+        switch style {
+        case .primary:
+            LinearGradient(colors: [DS.blue, DS.cyan], startPoint: .leading, endPoint: .trailing)
+        case .secondary:
+            Rectangle().fill(.ultraThinMaterial)
+        }
     }
 
-    private var border: Color {
-        style == .primary ? .clear : DS.blue.opacity(0.12)
+    private var border: AnyShapeStyle {
+        style == .primary ? AnyShapeStyle(Color.white.opacity(0.25)) : AnyShapeStyle(DS.glassStroke)
     }
 
     private var shadow: Color {
-        style == .primary ? DS.blue.opacity(0.18) : .black.opacity(0.04)
+        style == .primary ? DS.blue.opacity(0.22) : .black.opacity(0.06)
     }
 }
 
@@ -528,6 +559,7 @@ private struct MainMenuSheet: View {
                     Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
                 }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Menu")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -565,6 +597,7 @@ private struct ServersSheet: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Servers")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -588,6 +621,7 @@ private struct LogsSheet: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Logs")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
