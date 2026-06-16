@@ -39,12 +39,6 @@ struct SettingsView: View {
                         Text(buildNumber)
                             .foregroundStyle(.secondary)
                     }
-                    HStack {
-                        Text("Backend")
-                        Spacer()
-                        Text("api.yeats.uz")
-                            .foregroundStyle(.secondary)
-                    }
                 } header: {
                     Label("About", systemImage: "info.circle")
                 }

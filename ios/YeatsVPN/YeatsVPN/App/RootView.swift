@@ -31,16 +31,20 @@ struct MainVPNView: View {
         ZStack {
             AmbientBackground(tint: stateColor)
 
-            VStack(spacing: 14) {
-                header
-                statusBlock
-                connectButton
-                metricsGrid
-                quickActions
+            ScrollView {
+                VStack(spacing: 16) {
+                    header
+                    statusBlock
+                    connectButton
+                    metricsGrid
+                    serversSection
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 8)
+                .padding(.bottom, 28)
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 50)
-            .padding(.bottom, 16)
+            .scrollIndicators(.hidden)
+            .refreshable { await viewModel.refresh() }
         }
         .task { await viewModel.refresh() }
         .sheet(item: $activeSheet) { sheet in
@@ -76,7 +80,7 @@ struct MainVPNView: View {
             Spacer()
 
             HStack(spacing: 8) {
-                iconButton("list.bullet.rectangle", sheet: .logs)
+                iconButton("gearshape", sheet: .settings)
                 iconButton("ellipsis", sheet: .menu)
             }
         }
@@ -224,25 +228,40 @@ struct MainVPNView: View {
         }
     }
 
-    private var quickActions: some View {
-        HStack(spacing: 12) {
-            QuickActionButton(
-                title: "Servers",
-                icon: "server.rack",
-                style: .secondary
-            ) {
-                activeSheet = .servers
-            }
+    @ViewBuilder
+    private var serversSection: some View {
+        if !environment.servers.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Locations")
+                        .font(.subheadline.weight(.bold))
+                    Spacer()
+                    Text("\(environment.servers.count)")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 2)
 
-            QuickActionButton(
-                title: "Refresh",
-                icon: "arrow.clockwise",
-                style: .primary,
-                isLoading: viewModel.isLoading
-            ) {
-                Task { await viewModel.refresh() }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(environment.servers) { server in
+                            ServerCard(server: server, isCurrent: isCurrentServer(server))
+                        }
+                    }
+                    .padding(.horizontal, 2)
+                    .padding(.vertical, 4)
+                }
             }
         }
+    }
+
+    private func isCurrentServer(_ server: ServerConfig) -> Bool {
+        guard viewModel.connectionState == .connected,
+              let location = viewModel.profile?.nodeLocation, !location.isEmpty else {
+            return false
+        }
+        return server.name.localizedCaseInsensitiveContains(location)
+            || location.localizedCaseInsensitiveContains(server.name)
     }
 
     @ViewBuilder
@@ -257,12 +276,6 @@ struct MainVPNView: View {
         case .settings:
             SettingsView()
                 .environmentObject(environment)
-        case .servers:
-            ServersSheet(servers: environment.servers)
-        case .logs:
-            LogsSheet(logs: viewModel.logs) {
-                viewModel.clearLogs()
-            }
         case .help:
             HelpSheet()
         }
@@ -439,66 +452,44 @@ private struct MetricTile: View {
     }
 }
 
-private struct QuickActionButton: View {
-    enum Style {
-        case primary
-        case secondary
-    }
-
-    let title: String
-    let icon: String
-    let style: Style
-    var isLoading = false
-    let action: () -> Void
+private struct ServerCard: View {
+    let server: ServerConfig
+    let isCurrent: Bool
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                if isLoading {
-                    ProgressView()
-                        .tint(style == .primary ? .white : DS.blue)
-                } else {
-                    Image(systemName: icon)
-                        .font(.headline.weight(.semibold))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "globe")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(isCurrent ? .green : DS.blue)
+                    .frame(width: 30, height: 30)
+                    .background((isCurrent ? Color.green : DS.blue).opacity(0.12), in: Circle())
+                Spacer()
+                if isCurrent {
+                    Circle()
+                        .fill(.green)
+                        .frame(width: 8, height: 8)
                 }
-                Text(title)
-                    .font(.headline.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.82)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .foregroundStyle(foreground)
-            .background(background)
-            .overlay { Capsule().fill(DS.glassSheen) }
-            .clipShape(Capsule())
-            .overlay { Capsule().strokeBorder(border, lineWidth: 1) }
-            .shadow(color: shadow, radius: 14, y: 7)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(server.displayName)
+                    .font(.subheadline.weight(.bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text(isCurrent ? "Active" : server.proto.rawValue.uppercased())
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(isCurrent ? .green : .secondary)
+            }
         }
-        .buttonStyle(PressableButtonStyle())
-        .disabled(isLoading)
-    }
-
-    private var foreground: Color {
-        style == .primary ? .white : DS.blue
-    }
-
-    @ViewBuilder
-    private var background: some View {
-        switch style {
-        case .primary:
-            LinearGradient(colors: [DS.blue, DS.cyan], startPoint: .leading, endPoint: .trailing)
-        case .secondary:
-            Rectangle().fill(.ultraThinMaterial)
+        .padding(14)
+        .frame(width: 150, height: 96, alignment: .leading)
+        .glassSurface(cornerRadius: DS.tileRadius, strokeOpacity: 0.8)
+        .overlay {
+            if isCurrent {
+                RoundedRectangle(cornerRadius: DS.tileRadius, style: .continuous)
+                    .strokeBorder(Color.green.opacity(0.5), lineWidth: 1.5)
+            }
         }
-    }
-
-    private var border: AnyShapeStyle {
-        style == .primary ? AnyShapeStyle(Color.white.opacity(0.25)) : AnyShapeStyle(DS.glassStroke)
-    }
-
-    private var shadow: Color {
-        style == .primary ? DS.blue.opacity(0.22) : .black.opacity(0.06)
     }
 }
 
@@ -506,8 +497,6 @@ private enum MainSheet: String, Identifiable {
     case menu
     case profile
     case settings
-    case servers
-    case logs
     case help
 
     var id: String { rawValue }
@@ -516,7 +505,7 @@ private enum MainSheet: String, Identifiable {
         switch self {
         case .menu:
             [.medium]
-        case .servers, .logs, .profile, .settings:
+        case .profile, .settings:
             [.medium, .large]
         case .help:
             [.fraction(0.34), .medium]
@@ -538,19 +527,9 @@ private struct MainMenuSheet: View {
                     Label("Profile", systemImage: "person.crop.circle")
                 }
                 Button {
-                    present(.settings)
+                    present(.help)
                 } label: {
-                    Label("Settings", systemImage: "gearshape")
-                }
-                Button {
-                    present(.servers)
-                } label: {
-                    Label("Servers", systemImage: "server.rack")
-                }
-                Button {
-                    present(.logs)
-                } label: {
-                    Label("Connection Logs", systemImage: "list.bullet.rectangle")
+                    Label("Help", systemImage: "questionmark.circle")
                 }
                 Button(role: .destructive) {
                     dismiss()
@@ -573,73 +552,13 @@ private struct MainMenuSheet: View {
     }
 }
 
-private struct ServersSheet: View {
-    let servers: [ServerConfig]
-
-    var body: some View {
-        NavigationStack {
-            List {
-                if servers.isEmpty {
-                    ContentUnavailableView("No Servers", systemImage: "server.rack")
-                } else {
-                    ForEach(servers) { server in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(server.displayName)
-                                .font(.headline)
-                            Text("\(server.address):\(server.port)")
-                                .font(.caption.monospaced())
-                                .foregroundStyle(.secondary)
-                            Text(server.proto.rawValue.uppercased())
-                                .font(.caption2.weight(.bold))
-                                .foregroundStyle(DS.blue)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-            }
-            .scrollContentBackground(.hidden)
-            .navigationTitle("Servers")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-    }
-}
-
-private struct LogsSheet: View {
-    let logs: [DebugLogEntry]
-    let clear: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            List {
-                if logs.isEmpty {
-                    ContentUnavailableView("No Logs", systemImage: "list.bullet.rectangle")
-                } else {
-                    ForEach(logs.suffix(80)) { entry in
-                        Text(entry.display)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(entry.level == "error" ? .red : .secondary)
-                    }
-                }
-            }
-            .scrollContentBackground(.hidden)
-            .navigationTitle("Logs")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Clear", action: clear)
-                }
-            }
-        }
-    }
-}
-
 private struct HelpSheet: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
                 Label("Tap the switch to connect or disconnect.", systemImage: "power")
-                Label("Open Servers to inspect available locations.", systemImage: "server.rack")
-                Label("Connection diagnostics live in Logs.", systemImage: "list.bullet.rectangle")
+                Label("Swipe the Locations row to browse available servers.", systemImage: "server.rack")
+                Label("Pull down on the main screen to refresh your status.", systemImage: "arrow.clockwise")
                 Spacer()
             }
             .font(.subheadline.weight(.semibold))
