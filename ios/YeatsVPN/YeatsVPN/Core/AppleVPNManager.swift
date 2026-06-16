@@ -158,8 +158,8 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         manager.localizedDescription = localizedDescription
         manager.protocolConfiguration = proto
         manager.isEnabled = true
-        manager.isOnDemandEnabled = true
-        manager.onDemandRules = [NEOnDemandRuleConnect()]
+        manager.isOnDemandEnabled = false
+        manager.onDemandRules = []
         return manager
     }
 

@@ -47,13 +47,6 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
             logInfo("PacketTunnel start requested")
             let config = try await resolveStartupConfig(url: url)
 
-            setPhase(.applyingSettings)
-            logInfo("Applying preflight tunnel settings before Libbox startup")
-            let preflightSettings = buildTunnelSettings(from: nil)
-            try await setTunnelNetworkSettingsAsync(preflightSettings)
-            self.networkSettings = preflightSettings
-            logInfo("Preflight tunnel settings applied")
-
             setPhase(.startingLibbox)
             try setupLibbox()
 
