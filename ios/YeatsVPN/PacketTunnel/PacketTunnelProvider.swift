@@ -287,15 +287,10 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
         try await setTunnelNetworkSettingsAsync(settings)
         networkSettings = settings
 
-        if let fd = self.packetFlow.value(forKeyPath: "socket.fileDescriptor") as? Int32 {
-            logInfo("Opened packet tunnel fd from packetFlow socket: \(fd)")
+        let fd = LibboxGetTunnelFileDescriptor()
+        if fd != -1 {
+            logInfo("Opened packet tunnel fd from Libbox: \(fd)")
             return fd
-        }
-
-        let fallbackFd = LibboxGetTunnelFileDescriptor()
-        if fallbackFd != -1 {
-            logInfo("Opened packet tunnel fd from Libbox fallback: \(fallbackFd)")
-            return fallbackFd
         }
 
         logError("Missing packet tunnel file descriptor")
@@ -406,11 +401,18 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
     private func setTunnelNetworkSettingsAsync(_ settings: NEPacketTunnelNetworkSettings) async throws {
         logInfo("Applying tunnel network settings")
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            setTunnelNetworkSettings(settings) { error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
+            DispatchQueue.main.async { [weak self] in
+                guard let self else {
+                    continuation.resume(throwing: PacketTunnelError.libboxUnavailable)
+                    return
+                }
+
+                self.setTunnelNetworkSettings(settings) { error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume()
+                    }
                 }
             }
         }
