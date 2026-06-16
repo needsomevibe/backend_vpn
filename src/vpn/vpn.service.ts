@@ -19,21 +19,27 @@ export class VpnService {
 
   async getProfile(userId: string) {
     const { vpn, subscription } = await this.getVpnContext(userId);
-    const synced = await this.syncVpnAccountFromRemnawave(vpn);
+    const synced = await this.syncVpnAccountFromRemnawave(
+      vpn,
+      subscription?.expiresAt ?? vpn.expiresAt,
+    );
 
     return {
       status: synced.vpn.status.toLowerCase(),
       subscriptionUrl: synced.vpn.subscriptionUrl,
       trafficUsedGb: this.bytesToGb(synced.vpn.usedTrafficBytes),
       trafficLimitGb: this.bytesToGb(synced.vpn.trafficLimitBytes),
-      expiresAt: subscription?.expiresAt ?? synced.vpn.expiresAt,
+      expiresAt: synced.vpn.expiresAt,
       nodeLocation: synced.nodeLocation ?? 'US',
     };
   }
 
   async getUsage(userId: string) {
-    const { vpn } = await this.getVpnContext(userId);
-    const synced = await this.syncVpnAccountFromRemnawave(vpn);
+    const { vpn, subscription } = await this.getVpnContext(userId);
+    const synced = await this.syncVpnAccountFromRemnawave(
+      vpn,
+      subscription?.expiresAt ?? vpn.expiresAt,
+    );
     return {
       usedTrafficBytes: synced.vpn.usedTrafficBytes.toString(),
       usedTrafficGb: this.bytesToGb(synced.vpn.usedTrafficBytes),
@@ -109,15 +115,18 @@ export class VpnService {
     return { vpn: user.vpnAccount, subscription: user.subscriptions[0] ?? null };
   }
 
-  private async syncVpnAccountFromRemnawave(vpn: VpnAccount) {
+  private async syncVpnAccountFromRemnawave(vpn: VpnAccount, expiresAt: Date) {
     const usage = await this.remnawave.getUserUsage(vpn.remnawaveUuid);
     const usedTrafficBytes = BigInt(usage.usedTrafficBytes);
     const trafficLimitBytes =
       usage.trafficLimitBytes !== undefined
         ? BigInt(usage.trafficLimitBytes)
         : vpn.trafficLimitBytes;
-    const expiresAt = usage.expiresAt ? new Date(usage.expiresAt) : vpn.expiresAt;
     const subscriptionUrl = usage.subscriptionUrl ?? vpn.subscriptionUrl;
+
+    if (this.shouldUpdateRemoteExpiry(usage.expiresAt, expiresAt)) {
+      await this.remnawave.updateUser(vpn.remnawaveUuid, { expiresAt });
+    }
 
     const updated = await this.prisma.vpnAccount.update({
       where: { id: vpn.id },
@@ -130,6 +139,17 @@ export class VpnService {
     });
 
     return { vpn: updated, nodeLocation: usage.nodeLocation };
+  }
+
+  private shouldUpdateRemoteExpiry(remoteExpiresAt: string | undefined, localExpiresAt: Date) {
+    if (!remoteExpiresAt) {
+      return true;
+    }
+    const remoteTime = new Date(remoteExpiresAt).getTime();
+    if (Number.isNaN(remoteTime)) {
+      return true;
+    }
+    return Math.abs(remoteTime - localExpiresAt.getTime()) > 1000;
   }
 
   private async ensureSubscriptionAllowsVpn(userId: string) {
