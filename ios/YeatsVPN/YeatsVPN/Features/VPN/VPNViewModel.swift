@@ -38,6 +38,9 @@ final class VPNViewModel: ObservableObject {
         do {
             profile = try await environment.vpnService.profile()
             environment.vpnProfile = profile
+            if let url = profile?.subscriptionUrl, !url.isEmpty {
+                try? await environment.networkExtension.refreshConfiguration(subscriptionURL: url)
+            }
             await environment.loadServers()
         } catch {
             errorMessage = error.localizedDescription
@@ -74,6 +77,7 @@ final class VPNViewModel: ObservableObject {
                     nodeLocation: currentProfile.nodeLocation
                 )
                 environment.vpnProfile = profile
+                try? await environment.networkExtension.refreshConfiguration(subscriptionURL: result.subscriptionUrl)
             }
             await environment.loadServers()
         } catch {

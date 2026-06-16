@@ -59,6 +59,9 @@ final class HomeViewModel: ObservableObject {
             self.profile = try await profileResult
             self.usage = try await usageResult
             environment.vpnProfile = self.profile
+            if let url = self.profile?.subscriptionUrl, !url.isEmpty {
+                try? await environment.networkExtension.refreshConfiguration(subscriptionURL: url)
+            }
         } catch {
             errorMessage = error.localizedDescription
             environment.debugLog.error("Home refresh failed: \(error.localizedDescription)")

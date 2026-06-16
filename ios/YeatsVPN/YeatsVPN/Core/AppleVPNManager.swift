@@ -82,6 +82,39 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         await observeStartup(session)
     }
 
+    func refreshConfiguration(subscriptionURL: String) async throws {
+        await logInfo("VPN configuration refresh requested")
+        guard let manager = try await loadManager(),
+              let session = manager.connection as? NETunnelProviderSession else {
+            SharedDiagnostics.clearCachedConfig()
+            await logInfo("No active PacketTunnel manager; cleared cached config for next start")
+            return
+        }
+
+        guard manager.connection.status == .connected || manager.connection.status == .connecting else {
+            SharedDiagnostics.clearCachedConfig()
+            await logInfo("PacketTunnel is not active; cleared cached config for next start")
+            return
+        }
+
+        let command = PacketTunnelCommand(command: "refreshConfig", subscriptionURL: subscriptionURL)
+        let data = try JSONEncoder().encode(command)
+        let response = try await sendProviderMessage(data, to: session)
+        guard let response, !response.isEmpty else {
+            await logInfo("PacketTunnel config refresh returned empty response")
+            return
+        }
+
+        if let status = try? JSONDecoder().decode(PacketTunnelProviderStatus.self, from: response) {
+            await logInfo("PacketTunnel config refresh response: running=\(status.isRunning), phase=\(status.startupPhase ?? "unknown"), error=\(status.lastError ?? "none")")
+            for line in status.logs.suffix(20) {
+                await logInfo("PacketTunnel live: \(line)")
+            }
+        } else if let text = String(data: response, encoding: .utf8) {
+            await logInfo("PacketTunnel config refresh response: \(text)")
+        }
+    }
+
     func disconnect() async {
         do {
             await logInfo("Disconnect requested")
@@ -192,15 +225,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
 
     private func pingProvider(_ session: NETunnelProviderSession) async -> PacketTunnelProviderStatus? {
         do {
-            let data = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data?, Error>) in
-                do {
-                    try session.sendProviderMessage(Data("status".utf8)) { response in
-                        continuation.resume(returning: response)
-                    }
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
+            let data = try await sendProviderMessage(Data("status".utf8), to: session)
 
             guard let data, !data.isEmpty else {
                 await logInfo("PacketTunnel provider responded with empty message (extension may still be starting or crashed)")
@@ -222,6 +247,18 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         } catch {
             await logError("PacketTunnel provider did not respond: \(error.localizedDescription)")
             return nil
+        }
+    }
+
+    private func sendProviderMessage(_ data: Data, to session: NETunnelProviderSession) async throws -> Data? {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data?, Error>) in
+            do {
+                try session.sendProviderMessage(data) { response in
+                    continuation.resume(returning: response)
+                }
+            } catch {
+                continuation.resume(throwing: error)
+            }
         }
     }
 
@@ -343,6 +380,11 @@ private struct PacketTunnelProviderStatus: Decodable {
     let lastError: String?
     let subscriptionURL: String?
     let logs: [String]
+}
+
+private struct PacketTunnelCommand: Encodable {
+    let command: String
+    let subscriptionURL: String?
 }
 
 enum AppleVPNError: LocalizedError {

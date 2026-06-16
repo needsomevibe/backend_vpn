@@ -152,6 +152,11 @@ private struct CachedConfigEnvelope: Codable {
     let config: String
 }
 
+private struct PacketTunnelCommand: Decodable {
+    let command: String
+    let subscriptionURL: String?
+}
+
 private var cachedConfigFileURL: URL? {
     FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)?
         .appendingPathComponent(cachedConfigFileName)
@@ -196,6 +201,75 @@ override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @
 override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
     guard let completionHandler else { return }
 
+    if let command = try? JSONDecoder().decode(PacketTunnelCommand.self, from: messageData) {
+        handleCommand(command, completionHandler: completionHandler)
+        return
+    }
+
+    if String(data: messageData, encoding: .utf8) == "clearCache" {
+        clearCachedConfig()
+        logInfo("Cleared cached sing-box config by app request")
+        completionHandler(statusResponseData())
+        return
+    }
+
+    completionHandler(statusResponseData())
+}
+
+private func handleCommand(_ command: PacketTunnelCommand, completionHandler: @escaping (Data?) -> Void) {
+    switch command.command {
+    case "refreshConfig":
+        guard let value = command.subscriptionURL ?? subscriptionURL,
+              let url = URL(string: value) else {
+            lastStartupError = PacketTunnelError.missingSubscriptionURL.localizedDescription
+            logError("Missing subscription URL for config refresh")
+            completionHandler(statusResponseData())
+            return
+        }
+
+        Task {
+            await refreshRunningConfig(url: url)
+            completionHandler(statusResponseData())
+        }
+
+    case "clearCache":
+        clearCachedConfig()
+        logInfo("Cleared cached sing-box config by app request")
+        completionHandler(statusResponseData())
+
+    default:
+        logInfo("Ignoring unknown app command: \(command.command)")
+        completionHandler(statusResponseData())
+    }
+}
+
+private func refreshRunningConfig(url: URL) async {
+    logInfo("Refreshing running sing-box config from subscription")
+    do {
+        let fresh = try await downloadAndBuildConfig(url: url)
+        var checkError: NSError?
+        guard LibboxCheckConfig(fresh, &checkError) else {
+            throw checkError ?? PacketTunnelError.invalidSingBoxConfig
+        }
+
+        if let boxService {
+            try boxService.startOrReloadService(fresh, options: LibboxOverrideOptions())
+            logInfo("Reloaded running sing-box config")
+        } else {
+            logInfo("Libbox service is not running; refreshed cache only")
+        }
+
+        writeCachedConfig(fresh, for: url)
+        subscriptionURL = url.absoluteString
+        lastStartupError = nil
+        logInfo("Updated cached sing-box config from subscription")
+    } catch {
+        lastStartupError = error.localizedDescription
+        logError("Failed to refresh sing-box config: \(error.localizedDescription)")
+    }
+}
+
+private func statusResponseData() -> Data {
     let status = PacketTunnelStatus(
         isRunning: startupPhase == .running,
         startupPhase: startupPhase.rawValue,
@@ -205,10 +279,10 @@ override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) 
     )
 
     if let data = try? JSONEncoder().encode(status) {
-        completionHandler(data)
+        return data
     } else {
         let fallback = #"{"isRunning":false,"startupPhase":"\#(startupPhase.rawValue)","logs":[]}"#
-        completionHandler(Data(fallback.utf8))
+        return Data(fallback.utf8)
     }
 }
 

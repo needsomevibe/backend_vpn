@@ -4,6 +4,7 @@ enum SharedDiagnostics {
     static let appGroupIdentifier = "group.uz.yeats.vpn"
     static let logFileName = "vpn-extension.log"
     static let phaseFileName = "vpn-extension-phase.json"
+    static let cachedConfigFileName = "vpn-singbox-config.json"
 
     static var containerURL: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
@@ -15,6 +16,10 @@ enum SharedDiagnostics {
 
     static var phaseFileURL: URL? {
         containerURL?.appendingPathComponent(phaseFileName)
+    }
+
+    static var cachedConfigFileURL: URL? {
+        containerURL?.appendingPathComponent(cachedConfigFileName)
     }
 
     static var statusMessage: String {
@@ -72,5 +77,10 @@ enum SharedDiagnostics {
     static func clearPhase() {
         guard let phaseFileURL else { return }
         try? FileManager.default.removeItem(at: phaseFileURL)
+    }
+
+    static func clearCachedConfig() {
+        guard let cachedConfigFileURL else { return }
+        try? FileManager.default.removeItem(at: cachedConfigFileURL)
     }
 }

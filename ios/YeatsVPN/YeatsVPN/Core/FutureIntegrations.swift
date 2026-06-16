@@ -33,6 +33,7 @@ enum VPNConnectionState: Equatable {
 protocol NetworkExtensionManaging: Sendable {
     func currentState() async -> VPNConnectionState
     func connect(subscriptionURL: String) async throws
+    func refreshConfiguration(subscriptionURL: String) async throws
     func disconnect() async
 }
 
@@ -42,6 +43,10 @@ struct PlaceholderNetworkExtensionManager: NetworkExtensionManaging {
     }
 
     func connect(subscriptionURL: String) async throws {
+        _ = subscriptionURL
+    }
+
+    func refreshConfiguration(subscriptionURL: String) async throws {
         _ = subscriptionURL
     }
 
