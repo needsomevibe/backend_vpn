@@ -23,7 +23,7 @@ struct ProfileView: View {
                 .padding(20)
             }
             .refreshable { await viewModel.refresh() }
-            .background(DS.background)
+            .background(AmbientBackground())
             .navigationTitle("Profile")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

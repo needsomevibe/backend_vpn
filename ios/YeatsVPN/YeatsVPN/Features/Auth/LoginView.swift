@@ -45,7 +45,7 @@ struct LoginView: View {
                 }
                 .padding(24)
             }
-            .background(DS.background)
+            .background(AmbientBackground())
         }
     }
 }
