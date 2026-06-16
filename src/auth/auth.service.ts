@@ -9,7 +9,7 @@ import { SubscriptionStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { RemnawaveService } from '../remnawave/remnawave.service';
+import { RemnawaveApiError, RemnawaveService } from '../remnawave/remnawave.service';
 import { jsonSafe } from '../common/serializers/json-safe';
 import { AppleTokenService } from './apple-token.service';
 import { AppleLoginDto } from './dto/apple-login.dto';
@@ -34,6 +34,26 @@ export class AuthService {
     const email = dto.email.toLowerCase();
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
+      if (
+        existing.status === 'ACTIVE' &&
+        existing.passwordHash &&
+        (await bcrypt.compare(dto.password, existing.passwordHash))
+      ) {
+        await this.restoreVpnIfMissing(existing.id);
+        if (dto.deviceId) {
+          await this.prisma.device.upsert({
+            where: { userId_deviceId: { userId: existing.id, deviceId: dto.deviceId } },
+            create: {
+              userId: existing.id,
+              deviceId: dto.deviceId,
+              platform: 'ios',
+              name: dto.deviceName,
+            },
+            update: { lastSeenAt: new Date(), name: dto.deviceName },
+          });
+        }
+        return this.buildAuthResponse(existing.id, existing.email, dto.deviceId);
+      }
       throw new ConflictException('Email is already registered');
     }
 
@@ -195,6 +215,8 @@ export class AuthService {
   }
 
   private async buildAuthResponse(userId: string, email: string, deviceId?: string) {
+    await this.restoreVpnIfMissing(userId);
+
     const refreshTokenId = randomUUID();
     const refreshExpiresAt = new Date(Date.now() + REFRESH_TTL_DAYS * 86_400_000);
     const [accessToken, refreshToken] = await Promise.all([
@@ -309,5 +331,58 @@ export class AuthService {
         },
       }),
     ]);
+  }
+
+  private async restoreVpnIfMissing(userId: string) {
+    const account = await this.prisma.vpnAccount.findUnique({
+      where: { userId },
+      include: {
+        user: {
+          select: {
+            subscriptions: {
+              where: {
+                status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING] },
+              },
+              orderBy: { expiresAt: 'desc' },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+    if (!account) {
+      return;
+    }
+
+    try {
+      await this.remnawave.getUserByUuid(account.remnawaveUuid);
+      return;
+    } catch (error) {
+      if (!this.isRemnawaveNotFound(error)) {
+        throw error;
+      }
+    }
+
+    const expiresAt = account.user.subscriptions[0]?.expiresAt ?? account.expiresAt;
+    const remote = await this.remnawave.createUser({
+      username: account.username,
+      trafficLimitBytes: account.trafficLimitBytes.toString(),
+      expiresAt,
+    });
+
+    await this.prisma.vpnAccount.update({
+      where: { id: account.id },
+      data: {
+        remnawaveUuid: remote.uuid,
+        remnawaveShortUuid: remote.shortUuid,
+        subscriptionUrl: remote.subscriptionUrl,
+        expiresAt,
+        status: 'ACTIVE',
+      },
+    });
+  }
+
+  private isRemnawaveNotFound(error: unknown) {
+    return error instanceof RemnawaveApiError && error.upstreamStatus === 404;
   }
 }

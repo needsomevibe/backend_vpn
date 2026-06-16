@@ -3,7 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SubscriptionStatus, VpnAccount, VpnAccountStatus } from '@prisma/client';
+import {
+  Subscription,
+  SubscriptionStatus,
+  VpnAccount,
+  VpnAccountStatus,
+} from '@prisma/client';
 import { jsonSafe } from '../common/serializers/json-safe';
 import { PrismaService } from '../prisma/prisma.service';
 import { RemnawaveService } from '../remnawave/remnawave.service';
@@ -19,10 +24,7 @@ export class VpnService {
 
   async getProfile(userId: string) {
     const { vpn, subscription } = await this.getVpnContext(userId);
-    const synced = await this.syncVpnAccountFromRemnawave(
-      vpn,
-      subscription?.expiresAt ?? vpn.expiresAt,
-    );
+    const synced = await this.syncVpnAccountFromRemnawave(vpn, subscription);
 
     return {
       status: synced.vpn.status.toLowerCase(),
@@ -36,10 +38,7 @@ export class VpnService {
 
   async getUsage(userId: string) {
     const { vpn, subscription } = await this.getVpnContext(userId);
-    const synced = await this.syncVpnAccountFromRemnawave(
-      vpn,
-      subscription?.expiresAt ?? vpn.expiresAt,
-    );
+    const synced = await this.syncVpnAccountFromRemnawave(vpn, subscription);
     return {
       usedTrafficBytes: synced.vpn.usedTrafficBytes.toString(),
       usedTrafficGb: this.bytesToGb(synced.vpn.usedTrafficBytes),
@@ -115,7 +114,10 @@ export class VpnService {
     return { vpn: user.vpnAccount, subscription: user.subscriptions[0] ?? null };
   }
 
-  private async syncVpnAccountFromRemnawave(vpn: VpnAccount, expiresAt: Date) {
+  private async syncVpnAccountFromRemnawave(
+    vpn: VpnAccount,
+    subscription: Subscription | null,
+  ) {
     const usage = await this.remnawave.getUserUsage(vpn.remnawaveUuid);
     const usedTrafficBytes = BigInt(usage.usedTrafficBytes);
     const trafficLimitBytes =
@@ -123,9 +125,13 @@ export class VpnService {
         ? BigInt(usage.trafficLimitBytes)
         : vpn.trafficLimitBytes;
     const subscriptionUrl = usage.subscriptionUrl ?? vpn.subscriptionUrl;
+    const expiresAt = this.resolveRemoteExpiry(usage.expiresAt, vpn.expiresAt);
 
-    if (this.shouldUpdateRemoteExpiry(usage.expiresAt, expiresAt)) {
-      await this.remnawave.updateUser(vpn.remnawaveUuid, { expiresAt });
+    if (subscription && this.shouldUpdateLocalExpiry(subscription.expiresAt, expiresAt)) {
+      await this.prisma.subscription.update({
+        where: { id: subscription.id },
+        data: { expiresAt },
+      });
     }
 
     const updated = await this.prisma.vpnAccount.update({
@@ -141,15 +147,16 @@ export class VpnService {
     return { vpn: updated, nodeLocation: usage.nodeLocation };
   }
 
-  private shouldUpdateRemoteExpiry(remoteExpiresAt: string | undefined, localExpiresAt: Date) {
+  private resolveRemoteExpiry(remoteExpiresAt: string | undefined, fallbackExpiresAt: Date) {
     if (!remoteExpiresAt) {
-      return true;
+      return fallbackExpiresAt;
     }
-    const remoteTime = new Date(remoteExpiresAt).getTime();
-    if (Number.isNaN(remoteTime)) {
-      return true;
-    }
-    return Math.abs(remoteTime - localExpiresAt.getTime()) > 1000;
+    const expiresAt = new Date(remoteExpiresAt);
+    return Number.isNaN(expiresAt.getTime()) ? fallbackExpiresAt : expiresAt;
+  }
+
+  private shouldUpdateLocalExpiry(currentExpiresAt: Date, nextExpiresAt: Date) {
+    return Math.abs(currentExpiresAt.getTime() - nextExpiresAt.getTime()) > 1000;
   }
 
   private async ensureSubscriptionAllowsVpn(userId: string) {

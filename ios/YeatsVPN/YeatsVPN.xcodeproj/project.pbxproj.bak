@@ -140,6 +140,7 @@
 		A385BEAE2FDCCFC000F657E9 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
 		A385BF0D2FDCEAF700F657E9 /* Libbox.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Libbox.xcframework; path = YeatsVPN/Libbox.xcframework; sourceTree = "<group>"; };
 		A385BF112FDCEAF700F657E8 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		A3EB8E272FE18D010005225F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -187,6 +188,7 @@
 		500000000000000000000001 /* YeatsVPN */ = {
 			isa = PBXGroup;
 			children = (
+				A3EB8E272FE18D010005225F /* Assets.xcassets */,
 				10000000000000000000001E /* YeatsVPN.entitlements */,
 				100000000000000000000001 /* App/YeatsVPNApp.swift */,
 				100000000000000000000002 /* App/AppEnvironment.swift */,

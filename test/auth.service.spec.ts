@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { AppleTokenService } from '../src/auth/apple-token.service';
 import { AuthService } from '../src/auth/auth.service';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { RemnawaveService } from '../src/remnawave/remnawave.service';
+import { RemnawaveApiError, RemnawaveService } from '../src/remnawave/remnawave.service';
 
 describe('AuthService', () => {
   const prisma = {
@@ -20,7 +20,9 @@ describe('AuthService', () => {
       findFirst: jest.fn(),
     },
     vpnAccount: {
+      findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
     subscription: {
       create: jest.fn(),
@@ -36,6 +38,7 @@ describe('AuthService', () => {
 
   const remnawave = {
     createUser: jest.fn(),
+    getUserByUuid: jest.fn(),
   };
   const appleTokenService = {
     verifyIdentityToken: jest.fn(),
@@ -58,6 +61,9 @@ describe('AuthService', () => {
       shortUuid: 'short',
       subscriptionUrl: 'https://sub.yeats.uz/short',
     });
+    remnawave.getUserByUuid.mockResolvedValue({ uuid: 'remote-uuid' });
+    prisma.vpnAccount.findUnique.mockResolvedValue(null);
+    prisma.vpnAccount.update.mockResolvedValue({});
     prisma.$transaction.mockResolvedValue([]);
     prisma.device.upsert.mockResolvedValue({});
     prisma.refreshToken.create.mockResolvedValue({});
@@ -111,6 +117,64 @@ describe('AuthService', () => {
     });
     const tokenHash = prisma.refreshToken.create.mock.calls[0][0].data.tokenHash;
     await expect(bcrypt.compare(result.refreshToken, tokenHash)).resolves.toBe(true);
+  });
+
+  it('repairs a deleted Remnawave user on idempotent register with matching password', async () => {
+    const passwordHash = await bcrypt.hash('password123', 12);
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'user-12345678',
+      email: 'user@example.com',
+      status: 'ACTIVE',
+      passwordHash,
+    });
+    prisma.vpnAccount.findUnique.mockResolvedValue({
+      id: 'vpn-1',
+      userId: 'user-12345678',
+      remnawaveUuid: 'deleted-remote',
+      username: 'user_user-123',
+      trafficLimitBytes: BigInt(100 * 1024 ** 3),
+      expiresAt: new Date('2026-07-12T00:00:00.000Z'),
+      subscriptionUrl: 'https://sub.yeats.uz/old',
+      user: { subscriptions: [] },
+    });
+    remnawave.getUserByUuid.mockRejectedValue(new RemnawaveApiError(404, undefined));
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AuthService,
+        JwtService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: RemnawaveService, useValue: remnawave },
+        { provide: AppleTokenService, useValue: appleTokenService },
+        { provide: ConfigService, useValue: { getOrThrow: jest.fn() } },
+      ],
+    })
+      .overrideProvider(ConfigService)
+      .useValue({
+        getOrThrow: (key: string) =>
+          key === 'JWT_ACCESS_SECRET' ? 'access-secret' : 'refresh-secret',
+      })
+      .compile();
+
+    const service = moduleRef.get(AuthService);
+    const result = await service.register({
+      email: 'User@Example.com',
+      password: 'password123',
+      deviceId: 'device-1',
+    });
+
+    expect(remnawave.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        username: 'user_user-123',
+      }),
+    );
+    expect(prisma.vpnAccount.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'vpn-1' },
+        data: expect.objectContaining({ remnawaveUuid: 'remote-uuid' }),
+      }),
+    );
+    expect(result.accessToken).toEqual(expect.any(String));
   });
 
   it('signs in with Apple and provisions a VPN account for a new user', async () => {
