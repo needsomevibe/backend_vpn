@@ -32,23 +32,18 @@ struct MainVPNView: View {
             Color(uiColor: .systemGroupedBackground)
                 .ignoresSafeArea()
 
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 22) {
-                    header
-                    statusBlock
-                        .padding(.top, 8)
-                    connectButton
-                        .padding(.vertical, 2)
-                    metricsGrid
-                    quickActions
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 54)
-                .padding(.bottom, 28)
+            VStack(spacing: 14) {
+                header
+                statusBlock
+                connectButton
+                metricsGrid
+                quickActions
             }
+            .padding(.horizontal, 18)
+            .padding(.top, 50)
+            .padding(.bottom, 16)
         }
         .task { await viewModel.refresh() }
-        .refreshable { await viewModel.refresh() }
         .sheet(item: $activeSheet) { sheet in
             sheetView(sheet)
                 .presentationDetents(sheet.detents)
@@ -68,7 +63,7 @@ struct MainVPNView: View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Yeats VPN")
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
                 Text(headerSubtitle)
@@ -86,24 +81,23 @@ struct MainVPNView: View {
     }
 
     private var statusBlock: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             statusBadge
 
             Text(statusTitle)
-                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .font(.system(size: 30, weight: .bold, design: .rounded))
                 .contentTransition(.opacity)
 
             Text(statusSubtitle)
-                .font(.subheadline.weight(.medium))
+                .font(.caption.weight(.medium))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
                 .frame(maxWidth: 330)
 
             if let since = viewModel.connectedSince, viewModel.connectionState == .connected {
                 ConnectedDurationView(since: since)
-                    .padding(.top, 4)
             }
         }
     }
@@ -117,8 +111,8 @@ struct MainVPNView: View {
                 .font(.caption.weight(.bold))
         }
         .foregroundStyle(stateColor)
-        .padding(.horizontal, 13)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
         .background(stateColor.opacity(0.12), in: Capsule())
         .overlay {
             Capsule()
@@ -133,12 +127,12 @@ struct MainVPNView: View {
             ZStack {
                 Circle()
                     .fill(buttonFill)
-                    .frame(width: 168, height: 168)
-                    .shadow(color: stateColor.opacity(viewModel.connectionState == .disconnected ? 0.14 : 0.24), radius: 28, y: 14)
+                    .frame(width: 142, height: 142)
+                    .shadow(color: stateColor.opacity(viewModel.connectionState == .disconnected ? 0.12 : 0.22), radius: 24, y: 12)
 
                 Circle()
                     .strokeBorder(.white.opacity(0.34), lineWidth: 1)
-                    .frame(width: 168, height: 168)
+                    .frame(width: 142, height: 142)
 
                 if viewModel.connectionState == .connecting || viewModel.connectionState == .disconnecting {
                     ProgressView()
@@ -146,7 +140,7 @@ struct MainVPNView: View {
                         .scaleEffect(1.3)
                 } else {
                     Image(systemName: buttonSymbol)
-                        .font(.system(size: 50, weight: .bold))
+                        .font(.system(size: 42, weight: .bold))
                         .foregroundStyle(.white)
                         .symbolEffect(.bounce, value: viewModel.connectionState == .connected)
                 }
@@ -165,47 +159,39 @@ struct MainVPNView: View {
     }
 
     private var metricsGrid: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
                 MetricTile(
                     title: "Traffic",
                     value: usedTraffic,
                     footnote: trafficLimit,
                     icon: "arrow.up.arrow.down",
                     tint: DS.blue
-                ) {
-                    activeSheet = .logs
-                }
+                )
                 MetricTile(
                     title: "Server",
                     value: serverName,
                     footnote: environment.servers.isEmpty ? "No servers" : "\(environment.servers.count) available",
                     icon: "server.rack",
                     tint: .purple
-                ) {
-                    activeSheet = .servers
-                }
+                )
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 MetricTile(
                     title: "Expires",
                     value: viewModel.profile?.expiresAt?.shortDisplay ?? "-",
                     footnote: "Subscription",
                     icon: "calendar",
                     tint: .orange
-                ) {
-                    activeSheet = .profile
-                }
+                )
                 MetricTile(
                     title: "Status",
                     value: statusTitle,
                     footnote: viewModel.profile?.status.capitalized ?? "VPN",
                     icon: "shield.lefthalf.filled",
                     tint: stateColor
-                ) {
-                    activeSheet = .help
-                }
+                )
             }
         }
     }
@@ -229,7 +215,6 @@ struct MainVPNView: View {
                 Task { await viewModel.refresh() }
             }
         }
-        .padding(.top, 2)
     }
 
     @ViewBuilder
@@ -262,7 +247,7 @@ struct MainVPNView: View {
             Image(systemName: systemImage)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.primary)
-                .frame(width: 42, height: 42)
+                .frame(width: 40, height: 40)
                 .background(Color(uiColor: .secondarySystemGroupedBackground), in: Circle())
                 .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
         }
@@ -363,7 +348,7 @@ private struct ConnectedDurationView: View {
     var body: some View {
         TimelineView(.periodic(from: since, by: 1)) { context in
             Text(duration(from: since, to: context.date))
-                .font(.system(size: 21, weight: .semibold, design: .monospaced))
+                .font(.system(size: 19, weight: .semibold, design: .monospaced))
                 .foregroundStyle(DS.blue)
                 .contentTransition(.numericText())
                 .animation(.linear(duration: 0.2), value: duration(from: since, to: context.date))
@@ -390,45 +375,41 @@ private struct MetricTile: View {
     let footnote: String
     let icon: String
     let tint: Color
-    let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Image(systemName: icon)
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(tint)
-                        .frame(width: 34, height: 34)
-                        .background(tint.opacity(0.12), in: Circle())
-                    Spacer()
-                }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.secondary)
-                    Text(value)
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
-                    Text(footnote)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                }
+        VStack(alignment: .leading, spacing: 9) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(tint)
+                    .frame(width: 28, height: 28)
+                    .background(tint.opacity(0.12), in: Circle())
+                Spacer()
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, minHeight: 124, alignment: .leading)
-            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(Color(uiColor: .separator).opacity(0.16), lineWidth: 1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                Text(value)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.68)
+                Text(footnote)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
             }
-            .shadow(color: .black.opacity(0.035), radius: 12, y: 6)
         }
-        .buttonStyle(.plain)
+        .padding(13)
+        .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color(uiColor: .separator).opacity(0.14), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.025), radius: 10, y: 5)
     }
 }
 
@@ -460,7 +441,7 @@ private struct QuickActionButton: View {
                     .minimumScaleFactor(0.82)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .frame(height: 48)
             .foregroundStyle(foreground)
             .background(background, in: Capsule())
             .overlay {
