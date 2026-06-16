@@ -15,6 +15,9 @@ final class AppEnvironment: ObservableObject {
     }
     let debugLog: DebugLogStore
 
+    /// Drops stale DNS/connection state after the tunnel connects. Set by `live()`.
+    var refreshNetworkSession: (@Sendable () -> Void)?
+
     let authService: AuthServicing
     let vpnService: VPNServicing
     let tokenStore: TokenStoring
@@ -63,6 +66,7 @@ final class AppEnvironment: ObservableObject {
             push: PlaceholderPushNotificationManager(),
             networkExtension: vpnManager
         )
+        env.refreshNetworkSession = { [weak apiClient] in apiClient?.resetSession() }
         vpnManager.onStateChange = { [weak env] state in
             Task { @MainActor in
                 env?.connectionState = state

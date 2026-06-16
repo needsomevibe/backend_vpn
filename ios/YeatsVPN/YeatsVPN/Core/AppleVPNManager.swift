@@ -42,10 +42,21 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         await logInfo("PacketTunnel bundle id: \(providerBundleIdentifier)")
 
         // Don't restart if tunnel is already active
-        if let existing = try? await loadManager(),
-           existing.connection.status == .connected || existing.connection.status == .connecting {
-            await logInfo("Tunnel already active (status \(existing.connection.status.rawValue)), skipping reconnect")
-            return
+        if let existing = try? await loadManager() {
+            let status = existing.connection.status
+            if status == .connected || status == .connecting {
+                await logInfo("Tunnel already active (status \(status.rawValue)), skipping reconnect")
+                return
+            }
+            // A previous tunnel exists. Let the kernel fully release its
+            // Network Extension agent before starting a new one — restarting
+            // too quickly causes "Unable to lookup agent … data from kernel".
+            if status == .disconnecting || status == .reasserting {
+                await logInfo("Previous tunnel still stopping (status \(status.rawValue)); waiting for it to finish")
+                await waitForDisconnect(existing.connection)
+            }
+            await logInfo("Pausing 0.5s before restart to let kernel clean up previous tunnel")
+            try? await Task.sleep(nanoseconds: 500_000_000)
         }
 
         SharedDiagnostics.clearPhase()
@@ -261,6 +272,17 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
 
         await logInfo("Startup observation timed out — extension status: \(session.status.rawValue)")
         await importExtensionDiagnostics(includeStatus: true)
+    }
+
+    /// Polls until the connection reaches `.disconnected`/`.invalid`, up to ~3s.
+    private func waitForDisconnect(_ connection: NEVPNConnection) async {
+        for _ in 0..<6 {
+            if connection.status == .disconnected || connection.status == .invalid {
+                return
+            }
+            try? await Task.sleep(nanoseconds: 500_000_000)
+        }
+        await logInfo("Timed out waiting for previous tunnel to stop (status \(connection.status.rawValue)); proceeding")
     }
 
     private func logCrashPhase() async {

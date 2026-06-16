@@ -91,10 +91,14 @@ final class HomeViewModel: ObservableObject {
                 let state = await environment.networkExtension.currentState()
                 environment.connectionState = state
                 environment.debugLog.importExtensionLogs()
-                // Notify backend after tunnel is confirmed up — request goes through
-                // TUN → direct outbound, avoiding NECP policy block on en0
                 if state == .connected {
+                    // Drop DNS/connection state cached while the tunnel was
+                    // coming up (empty resolutions cause -1009 on api.yeats.uz)
+                    environment.refreshNetworkSession?()
+                    // Notify backend after tunnel is confirmed up — request goes
+                    // through TUN → direct outbound, avoiding NECP block on en0
                     Task { _ = try? await environment.vpnService.enable() }
+                    await refresh()
                 }
             } catch {
                 environment.connectionState = .unavailable(error.localizedDescription)

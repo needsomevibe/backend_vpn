@@ -7,6 +7,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
 private let logger = Logger(subsystem: "uz.yeats.vpn.PacketTunnel", category: "PacketTunnel")
 private let appGroupIdentifier = "group.uz.yeats.vpn"
 private let extensionLogFileName = "vpn-extension.log"
+private let cachedConfigFileName = "vpn-singbox-config.json"
 private var subscriptionURL: String?
 private var boxService: LibboxCommandServer?
 private var networkSettings: NEPacketTunnelNetworkSettings?
@@ -44,28 +45,7 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
     Task {
         do {
             logInfo("PacketTunnel start requested")
-            setPhase(.downloadingSubscription)
-            logInfo("Downloading subscription for tunnel startup")
-            let (data, response) = try await URLSession.shared.data(from: url)
-            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                throw PacketTunnelError.subscriptionHTTPStatus(http.statusCode)
-            }
-            guard let rawSubscription = String(data: data, encoding: .utf8) else {
-                throw PacketTunnelError.invalidSubscriptionData
-            }
-            logInfo("Subscription downloaded, bytes: \(data.count)")
-
-            setPhase(.buildingConfig)
-            let buildResult = try SingBoxConfigBuilder.build(from: rawSubscription)
-            let config = buildResult.config
-            logInfo("Generated sing-box config, bytes: \(config.utf8.count), outbounds: \(buildResult.outboundCount), selected: \(buildResult.selectedTag), server: \(buildResult.selectedServer)")
-
-            setPhase(.validatingConfig)
-            var checkError: NSError?
-            if !LibboxCheckConfig(config, &checkError) {
-                throw checkError ?? PacketTunnelError.invalidSingBoxConfig
-            }
-            logInfo("Libbox config validation succeeded")
+            let config = try await resolveStartupConfig(url: url)
 
             setPhase(.applyingSettings)
             logInfo("Applying preflight tunnel settings before Libbox startup")
@@ -95,12 +75,116 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
             setPhase(.running)
             logInfo("VPN started successfully with Sing-Box integration")
             completionHandler(nil)
+
+            // Refresh cached config in the background so the next start is fast
+            // and the cache stays current with the latest subscription.
+            refreshConfigCacheInBackground(url: url)
         } catch {
             setPhase(.failed, error: error.localizedDescription)
             logError("Failed to start VPN: \(error.localizedDescription)")
             completionHandler(error)
         }
     }
+}
+
+// MARK: - Startup Config Resolution & Caching
+
+/// Returns a validated sing-box config to start with. Uses a previously
+/// cached config for the same subscription URL (fast path, no network) when
+/// available and valid; otherwise downloads and builds it.
+private func resolveStartupConfig(url: URL) async throws -> String {
+    if let cached = readCachedConfig(for: url) {
+        setPhase(.validatingConfig)
+        var checkError: NSError?
+        if LibboxCheckConfig(cached, &checkError) {
+            logInfo("Using cached sing-box config, bytes: \(cached.utf8.count) — skipping subscription download")
+            return cached
+        }
+        logInfo("Cached config invalid, discarding: \(checkError?.localizedDescription ?? "unknown")")
+        clearCachedConfig()
+    }
+
+    setPhase(.downloadingSubscription)
+    logInfo("Downloading subscription for tunnel startup")
+    let config = try await downloadAndBuildConfig(url: url)
+
+    setPhase(.validatingConfig)
+    var checkError: NSError?
+    if !LibboxCheckConfig(config, &checkError) {
+        throw checkError ?? PacketTunnelError.invalidSingBoxConfig
+    }
+    logInfo("Libbox config validation succeeded")
+    writeCachedConfig(config, for: url)
+    return config
+}
+
+/// Downloads the subscription and builds a sing-box config. No phase/state
+/// side effects so it is safe to call from a background refresh task.
+private func downloadAndBuildConfig(url: URL) async throws -> String {
+    let (data, response) = try await URLSession.shared.data(from: url)
+    if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+        throw PacketTunnelError.subscriptionHTTPStatus(http.statusCode)
+    }
+    guard let rawSubscription = String(data: data, encoding: .utf8) else {
+        throw PacketTunnelError.invalidSubscriptionData
+    }
+    let buildResult = try SingBoxConfigBuilder.build(from: rawSubscription)
+    logInfo("Generated sing-box config, bytes: \(buildResult.config.utf8.count), outbounds: \(buildResult.outboundCount), selected: \(buildResult.selectedTag), server: \(buildResult.selectedServer)")
+    return buildResult.config
+}
+
+/// After the tunnel is up, refresh the cached config from the latest
+/// subscription so the next start is both fast and current. Does not reload
+/// the running service, avoiding any mid-session interruption.
+private func refreshConfigCacheInBackground(url: URL) {
+    Task.detached(priority: .utility) { [weak self] in
+        guard let self else { return }
+        do {
+            let fresh = try await self.downloadAndBuildConfig(url: url)
+            var checkError: NSError?
+            guard LibboxCheckConfig(fresh, &checkError) else {
+                self.logInfo("Background config refresh produced invalid config, keeping existing cache")
+                return
+            }
+            self.writeCachedConfig(fresh, for: url)
+            self.logInfo("Refreshed cached sing-box config for next start")
+        } catch {
+            self.logInfo("Background config refresh failed: \(error.localizedDescription)")
+        }
+    }
+}
+
+private struct CachedConfigEnvelope: Codable {
+    let url: String
+    let config: String
+}
+
+private var cachedConfigFileURL: URL? {
+    FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)?
+        .appendingPathComponent(cachedConfigFileName)
+}
+
+private func readCachedConfig(for url: URL) -> String? {
+    guard let fileURL = cachedConfigFileURL,
+          let data = try? Data(contentsOf: fileURL),
+          let cached = try? JSONDecoder().decode(CachedConfigEnvelope.self, from: data),
+          cached.url == url.absoluteString,
+          !cached.config.isEmpty else {
+        return nil
+    }
+    return cached.config
+}
+
+private func writeCachedConfig(_ config: String, for url: URL) {
+    guard let fileURL = cachedConfigFileURL else { return }
+    let envelope = CachedConfigEnvelope(url: url.absoluteString, config: config)
+    guard let data = try? JSONEncoder().encode(envelope) else { return }
+    try? data.write(to: fileURL, options: [.atomic])
+}
+
+private func clearCachedConfig() {
+    guard let fileURL = cachedConfigFileURL else { return }
+    try? FileManager.default.removeItem(at: fileURL)
 }
 
 override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
@@ -340,7 +424,9 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
 
     private func buildTunnelSettings(from options: (any LibboxTunOptionsProtocol)?) -> NEPacketTunnelNetworkSettings {
         let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: "127.0.0.1")
-        settings.mtu = NSNumber(value: options?.getMTU() ?? 1500)
+        // Clamp MTU to 1280 — VLESS+TLS+IP overhead makes 1500 fragment packets
+        let requestedMTU = Int(options?.getMTU() ?? 1280)
+        settings.mtu = NSNumber(value: min(requestedMTU, 1280))
 
         let ipv4 = ipv4Settings(from: options)
         settings.ipv4Settings = ipv4

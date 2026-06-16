@@ -6,18 +6,41 @@ protocol AuthRefreshing: AnyObject {
 
 final class APIClient: @unchecked Sendable {
     let baseURL: URL
-    private let session: URLSession
+    private let lock = NSLock()
+    private var _session: URLSession
+    private var session: URLSession {
+        lock.lock(); defer { lock.unlock() }
+        return _session
+    }
     private let tokenStore: TokenStoring
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
     weak var authRefresher: AuthRefreshing?
 
-    init(baseURL: URL, session: URLSession = .shared, tokenStore: TokenStoring) {
+    init(baseURL: URL, session: URLSession? = nil, tokenStore: TokenStoring) {
         self.baseURL = baseURL
-        self.session = session
+        self._session = session ?? URLSession(configuration: Self.makeConfiguration())
         self.tokenStore = tokenStore
         self.decoder = JSONDecoder.yeats
         self.encoder = JSONEncoder()
+    }
+
+    private static func makeConfiguration() -> URLSessionConfiguration {
+        let config = URLSessionConfiguration.default
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        config.urlCache = nil
+        return config
+    }
+
+    /// Recreate the underlying session to drop any stale (e.g. empty) DNS
+    /// resolutions cached while the tunnel was coming up. Call after the VPN
+    /// tunnel is confirmed connected so subsequent requests re-resolve hosts.
+    func resetSession() {
+        lock.lock()
+        let old = _session
+        _session = URLSession(configuration: Self.makeConfiguration())
+        lock.unlock()
+        old.finishTasksAndInvalidate()
     }
 
     func request<Response: Decodable>(_ endpoint: APIEndpoint) async throws -> Response {
