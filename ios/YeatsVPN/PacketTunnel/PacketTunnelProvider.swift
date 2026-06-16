@@ -11,6 +11,7 @@ private var subscriptionURL: String?
 private var boxService: LibboxCommandServer?
 private var networkSettings: NEPacketTunnelNetworkSettings?
 private var pathMonitor: NWPathMonitor?
+private var recentLogLines: [String] = []
 
 override func startTunnel(options: [String: NSObject]?, completionHandler: @escaping (Error?) -> Void) {
     logInfo("PacketTunnel startTunnel entered")
@@ -91,7 +92,8 @@ override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) 
 
     let status = PacketTunnelStatus(
         isRunning: subscriptionURL != nil,
-        subscriptionURL: subscriptionURL
+        subscriptionURL: subscriptionURL,
+        logs: recentLogLines
     )
 
     let data = try? JSONEncoder().encode(status)
@@ -103,6 +105,7 @@ override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) 
 private struct PacketTunnelStatus: Encodable {
 let isRunning: Bool
 let subscriptionURL: String?
+let logs: [String]
 }
 
 private enum PacketTunnelError: LocalizedError {
@@ -196,7 +199,8 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
 
     func getInterfaces() throws -> any LibboxNetworkInterfaceIteratorProtocol {
         guard let pathMonitor else {
-            throw PacketTunnelError.defaultInterfaceMonitorUnavailable
+            logInfo("Default interface monitor unavailable; returning empty interface list")
+            return NetworkInterfaceIterator([])
         }
 
         let path = pathMonitor.currentPath
@@ -459,6 +463,10 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
         }
 
         let line = "\(Self.timestamp()) [\(level)] \(message)\n"
+        recentLogLines.append(line.trimmingCharacters(in: .newlines))
+        if recentLogLines.count > 80 {
+            recentLogLines.removeFirst(recentLogLines.count - 80)
+        }
         let fileURL = containerURL.appendingPathComponent(extensionLogFileName)
         guard let data = line.data(using: .utf8) else { return }
 

@@ -176,7 +176,14 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
             }
 
             if let data, let response = String(data: data, encoding: .utf8) {
-                await logInfo("PacketTunnel provider responded: \(response)")
+                if let status = try? JSONDecoder().decode(PacketTunnelProviderStatus.self, from: data) {
+                    await logInfo("PacketTunnel provider responded: running=\(status.isRunning), subscription=\(status.subscriptionURL != nil)")
+                    for line in status.logs.suffix(20) {
+                        await logInfo("PacketTunnel live: \(line)")
+                    }
+                } else {
+                    await logInfo("PacketTunnel provider responded: \(response)")
+                }
             } else {
                 await logInfo("PacketTunnel provider responded with empty message")
             }
@@ -247,6 +254,12 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
 
 enum PacketTunnelKeys {
     static let subscriptionURL = "subscriptionUrl"
+}
+
+private struct PacketTunnelProviderStatus: Decodable {
+    let isRunning: Bool
+    let subscriptionURL: String?
+    let logs: [String]
 }
 
 enum AppleVPNError: LocalizedError {

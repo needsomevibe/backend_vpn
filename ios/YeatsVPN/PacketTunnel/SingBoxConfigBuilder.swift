@@ -100,7 +100,6 @@ enum SingBoxConfigBuilder {
                 ["action": "sniff"],
                 ["protocol": "dns", "action": "hijack-dns"],
             ],
-            "auto_detect_interface": true,
             "final": "proxy",
         ]
     }
