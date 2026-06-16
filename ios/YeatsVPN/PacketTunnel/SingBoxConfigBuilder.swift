@@ -99,7 +99,7 @@ enum SingBoxConfigBuilder {
             "address": [
                 "172.19.0.1/30",
             ],
-            "mtu": 1500,
+            "mtu": 1280,
             "auto_route": true,
             "strict_route": false,
             "stack": "gvisor",
