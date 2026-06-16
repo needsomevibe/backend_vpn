@@ -42,12 +42,17 @@ enum SingBoxConfigBuilder {
         ]
         let direct: [String: Any] = ["type": "direct", "tag": "direct", "domain_strategy": "prefer_ipv4"]
 
+        let serverDomains = outbounds
+            .compactMap { $0["server"] as? String }
+            .filter { !$0.isEmpty && !isIPAddress($0) }
+            .uniqued()
+
         let config: [String: Any] = [
             "log": ["level": "info", "timestamp": true],
-            "dns": buildDNS(),
+            "dns": buildDNS(serverDomains: serverDomains),
             "inbounds": [buildTunInbound()],
             "outbounds": [selector] + outbounds + [direct],
-            "route": buildRoute(),
+            "route": buildRoute(serverDomains: serverDomains),
         ]
 
         guard let data = try? JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys]),
@@ -65,15 +70,19 @@ enum SingBoxConfigBuilder {
 
     // MARK: - Top-Level Sections
 
-    private static func buildDNS() -> [String: Any] {
-        [
+    private static func buildDNS(serverDomains: [String]) -> [String: Any] {
+        var rules: [[String: Any]] = []
+        if !serverDomains.isEmpty {
+            rules.append(["domain": serverDomains, "action": "route", "server": "dns-direct"])
+        }
+        rules.append(["action": "route", "server": "dns-remote"])
+
+        return [
             "servers": [
                 ["type": "https", "tag": "dns-remote", "server": "1.1.1.1", "detour": "proxy"],
                 ["type": "udp", "tag": "dns-direct", "server": "1.1.1.1", "detour": "direct"],
             ],
-            "rules": [
-                ["action": "route", "server": "dns-remote"],
-            ],
+            "rules": rules,
             "final": "dns-remote",
             "strategy": "prefer_ipv4",
         ]
@@ -93,12 +102,16 @@ enum SingBoxConfigBuilder {
         ]
     }
 
-    private static func buildRoute() -> [String: Any] {
-        [
-            "rules": [
-                ["action": "sniff"],
-                ["protocol": "dns", "action": "hijack-dns"],
-            ],
+    private static func buildRoute(serverDomains: [String]) -> [String: Any] {
+        var rules: [[String: Any]] = [
+            ["action": "sniff"],
+            ["protocol": "dns", "action": "hijack-dns"],
+        ]
+        if !serverDomains.isEmpty {
+            rules.append(["domain": serverDomains, "outbound": "direct"])
+        }
+        return [
+            "rules": rules,
             "final": "proxy",
         ]
     }
@@ -443,6 +456,22 @@ enum SingBoxConfigBuilder {
         while padded.count % 4 != 0 { padded += "=" }
         guard let data = Data(base64Encoded: padded) else { return nil }
         return String(data: data, encoding: .utf8)
+    }
+
+    private static func isIPAddress(_ string: String) -> Bool {
+        var sin = sockaddr_in()
+        var sin6 = sockaddr_in6()
+        return string.withCString { cString in
+            inet_pton(AF_INET, cString, &sin.sin_addr) == 1
+                || inet_pton(AF_INET6, cString, &sin6.sin6_addr) == 1
+        }
+    }
+}
+
+private extension Array where Element: Hashable {
+    func uniqued() -> [Element] {
+        var seen = Set<Element>()
+        return filter { seen.insert($0).inserted }
     }
 }
 
