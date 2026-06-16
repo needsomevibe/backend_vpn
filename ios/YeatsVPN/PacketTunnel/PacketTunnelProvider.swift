@@ -228,26 +228,13 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
     func localDNSTransport() -> (any LibboxLocalDNSTransportProtocol)? { nil }
 
     func openTun(_ options: (any LibboxTunOptionsProtocol)?, ret0_: UnsafeMutablePointer<Int32>?) throws {
-        logInfo("openTun requested by Libbox")
-        let settings = buildTunnelSettings(from: options)
-        try setTunnelNetworkSettingsBlocking(settings)
-        networkSettings = settings
-
-        if let fd = self.packetFlow.value(forKeyPath: "socket.fileDescriptor") as? Int32 {
-            ret0_?.pointee = fd
-            logInfo("Opened packet tunnel fd from packetFlow socket: \(fd)")
-            return
+        guard let ret0_ else {
+            throw PacketTunnelError.missingTunnelFileDescriptor
         }
 
-        let fallbackFd = LibboxGetTunnelFileDescriptor()
-        if fallbackFd != -1 {
-            ret0_?.pointee = fallbackFd
-            logInfo("Opened packet tunnel fd from Libbox fallback: \(fallbackFd)")
-            return
+        ret0_.pointee = try runBlocking { [self] in
+            try await openTunAsync(options)
         }
-
-        logError("Missing packet tunnel file descriptor")
-        throw PacketTunnelError.missingTunnelFileDescriptor
     }
 
     func readWIFIState() -> LibboxWIFIState? { nil }
@@ -294,17 +281,37 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
         )
     }
 
+    private func openTunAsync(_ options: (any LibboxTunOptionsProtocol)?) async throws -> Int32 {
+        logInfo("openTun requested by Libbox")
+        let settings = buildTunnelSettings(from: options)
+        try await setTunnelNetworkSettingsAsync(settings)
+        networkSettings = settings
+
+        if let fd = self.packetFlow.value(forKeyPath: "socket.fileDescriptor") as? Int32 {
+            logInfo("Opened packet tunnel fd from packetFlow socket: \(fd)")
+            return fd
+        }
+
+        let fallbackFd = LibboxGetTunnelFileDescriptor()
+        if fallbackFd != -1 {
+            logInfo("Opened packet tunnel fd from Libbox fallback: \(fallbackFd)")
+            return fallbackFd
+        }
+
+        logError("Missing packet tunnel file descriptor")
+        throw PacketTunnelError.missingTunnelFileDescriptor
+    }
+
     private func buildTunnelSettings(from options: (any LibboxTunOptionsProtocol)?) -> NEPacketTunnelNetworkSettings {
         let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: "127.0.0.1")
         settings.mtu = NSNumber(value: options?.getMTU() ?? 1500)
 
-        let ipv4 = NEIPv4Settings(addresses: ["172.19.0.1"], subnetMasks: ["255.255.255.252"])
-        ipv4.includedRoutes = [NEIPv4Route.default()]
+        let ipv4 = ipv4Settings(from: options)
         settings.ipv4Settings = ipv4
 
-        let ipv6 = NEIPv6Settings(addresses: ["fdfe:dcba:9876::1"], networkPrefixLengths: [126])
-        ipv6.includedRoutes = [NEIPv6Route.default()]
-        settings.ipv6Settings = ipv6
+        if let ipv6 = ipv6Settings(from: options) {
+            settings.ipv6Settings = ipv6
+        }
 
         let dnsServers = dnsServers(from: options)
         let dnsSettings = NEDNSSettings(servers: dnsServers)
@@ -313,6 +320,75 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
         settings.dnsSettings = dnsSettings
         logInfo("Built tunnel settings: mtu=\(settings.mtu ?? 0), dns=\(dnsServers.joined(separator: ","))")
         return settings
+    }
+
+    private func ipv4Settings(from options: (any LibboxTunOptionsProtocol)?) -> NEIPv4Settings {
+        var addresses: [String] = []
+        var masks: [String] = []
+        if let iterator = options?.getInet4Address() {
+            while iterator.hasNext() {
+                guard let prefix = iterator.next() else { continue }
+                addresses.append(prefix.address())
+                masks.append(prefix.mask())
+            }
+        }
+
+        if addresses.isEmpty || masks.isEmpty {
+            addresses = ["172.19.0.1"]
+            masks = ["255.255.255.252"]
+        }
+
+        let settings = NEIPv4Settings(addresses: addresses, subnetMasks: masks)
+        let included = ipv4Routes(from: options?.getInet4RouteAddress())
+        let excluded = ipv4Routes(from: options?.getInet4RouteExcludeAddress())
+        settings.includedRoutes = included.isEmpty ? [NEIPv4Route.default()] : included
+        settings.excludedRoutes = excluded
+        logInfo("IPv4 tunnel addresses: \(addresses.joined(separator: ",")), routes: \(settings.includedRoutes?.count ?? 0), excluded: \(excluded.count)")
+        return settings
+    }
+
+    private func ipv4Routes(from iterator: (any LibboxRoutePrefixIteratorProtocol)?) -> [NEIPv4Route] {
+        guard let iterator else { return [] }
+        var routes: [NEIPv4Route] = []
+        while iterator.hasNext() {
+            guard let prefix = iterator.next() else { continue }
+            routes.append(NEIPv4Route(destinationAddress: prefix.address(), subnetMask: prefix.mask()))
+        }
+        return routes
+    }
+
+    private func ipv6Settings(from options: (any LibboxTunOptionsProtocol)?) -> NEIPv6Settings? {
+        var addresses: [String] = []
+        var prefixLengths: [NSNumber] = []
+        if let iterator = options?.getInet6Address() {
+            while iterator.hasNext() {
+                guard let prefix = iterator.next() else { continue }
+                addresses.append(prefix.address())
+                prefixLengths.append(NSNumber(value: prefix.prefix()))
+            }
+        }
+
+        guard !addresses.isEmpty, !prefixLengths.isEmpty else {
+            return nil
+        }
+
+        let settings = NEIPv6Settings(addresses: addresses, networkPrefixLengths: prefixLengths)
+        let included = ipv6Routes(from: options?.getInet6RouteAddress())
+        let excluded = ipv6Routes(from: options?.getInet6RouteExcludeAddress())
+        settings.includedRoutes = included.isEmpty ? [NEIPv6Route.default()] : included
+        settings.excludedRoutes = excluded
+        logInfo("IPv6 tunnel addresses: \(addresses.joined(separator: ",")), routes: \(settings.includedRoutes?.count ?? 0), excluded: \(excluded.count)")
+        return settings
+    }
+
+    private func ipv6Routes(from iterator: (any LibboxRoutePrefixIteratorProtocol)?) -> [NEIPv6Route] {
+        guard let iterator else { return [] }
+        var routes: [NEIPv6Route] = []
+        while iterator.hasNext() {
+            guard let prefix = iterator.next() else { continue }
+            routes.append(NEIPv6Route(destinationAddress: prefix.address(), networkPrefixLength: NSNumber(value: prefix.prefix())))
+        }
+        return routes
     }
 
     private func dnsServers(from options: (any LibboxTunOptionsProtocol)?) -> [String] {
@@ -327,17 +403,16 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
         return servers.isEmpty ? ["1.1.1.1", "8.8.8.8"] : servers
     }
 
-    private func setTunnelNetworkSettingsBlocking(_ settings: NEPacketTunnelNetworkSettings) throws {
+    private func setTunnelNetworkSettingsAsync(_ settings: NEPacketTunnelNetworkSettings) async throws {
         logInfo("Applying tunnel network settings")
-        let semaphore = DispatchSemaphore(value: 0)
-        var capturedError: Error?
-        setTunnelNetworkSettings(settings) { error in
-            capturedError = error
-            semaphore.signal()
-        }
-        semaphore.wait()
-        if let capturedError {
-            throw capturedError
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            setTunnelNetworkSettings(settings) { error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            }
         }
         logInfo("Tunnel network settings applied")
     }
@@ -418,4 +493,23 @@ private final class NetworkInterfaceIterator: NSObject, LibboxNetworkInterfaceIt
     func next() -> LibboxNetworkInterface? {
         nextValue
     }
+}
+
+private func runBlocking<T>(_ block: @escaping () async throws -> T) throws -> T {
+    let semaphore = DispatchSemaphore(value: 0)
+    let box = BlockingResultBox<T>()
+    Task.detached(priority: .userInitiated) {
+        do {
+            box.result = .success(try await block())
+        } catch {
+            box.result = .failure(error)
+        }
+        semaphore.signal()
+    }
+    semaphore.wait()
+    return try box.result.get()
+}
+
+private final class BlockingResultBox<T>: @unchecked Sendable {
+    var result: Result<T, Error>!
 }

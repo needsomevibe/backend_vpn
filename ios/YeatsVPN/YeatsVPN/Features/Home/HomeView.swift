@@ -168,7 +168,7 @@ struct HomeView: View {
                         .padding(.top, 4)
                 } else {
                     VStack(alignment: .leading, spacing: 8) {
-                        ForEach(viewModel.logs.suffix(12)) { entry in
+                        ForEach(viewModel.logs.suffix(60)) { entry in
                             Text(entry.display)
                                 .font(.caption.monospaced())
                                 .foregroundStyle(entry.level == "error" ? .red : .secondary)
