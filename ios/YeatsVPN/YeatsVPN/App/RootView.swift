@@ -35,8 +35,7 @@ struct MainVPNView: View {
                 header
                 statusBlock
                 connectButton
-                metricsGrid
-                currentLocationPanel
+                connectionSummaryPanel
             }
             .padding(.horizontal, 18)
             .padding(.top, 50)
@@ -63,45 +62,39 @@ struct MainVPNView: View {
 
     private var header: some View {
         HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Remna")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.82)
-                Text(headerSubtitle)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
+            iconButton("line.3.horizontal", sheet: .menu)
 
             Spacer()
 
-            HStack(spacing: 8) {
-                iconButton("gearshape", sheet: .settings)
-                iconButton("ellipsis", sheet: .menu)
-            }
+            Text("Yeats VPN")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(.primary)
+
+            Spacer()
+
+            iconButton("gearshape", sheet: .settings)
         }
     }
 
     private var statusBlock: some View {
-        VStack(spacing: 8) {
-            statusBadge
+        VStack(spacing: 10) {
+            if let since = viewModel.connectedSince, viewModel.connectionState == .connected {
+                ConnectedDurationView(since: since, size: 48)
+            } else {
+                Text("00:00")
+                    .font(.system(size: 48, weight: .bold, design: .monospaced))
+                    .foregroundStyle(.primary.opacity(0.88))
+            }
 
-            Text(statusTitle)
-                .font(.system(size: 30, weight: .bold, design: .rounded))
-                .contentTransition(.opacity)
+            statusBadge
 
             Text(statusSubtitle)
                 .font(.caption.weight(.medium))
-                .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.72)
-                .frame(maxWidth: 330)
-
-            if let since = viewModel.connectedSince, viewModel.connectionState == .connected {
-                ConnectedDurationView(since: since)
-            }
+                .minimumScaleFactor(0.76)
         }
+        .padding(.top, 18)
     }
 
     private var statusBadge: some View {
@@ -186,61 +179,22 @@ struct MainVPNView: View {
         }
     }
 
-    private var metricsGrid: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 10) {
-                MetricTile(
-                    title: "Traffic",
-                    value: usedTraffic,
-                    footnote: trafficLimit,
-                    icon: "arrow.up.arrow.down",
-                    tint: DS.blue
-                )
-                MetricTile(
-                    title: "Server",
-                    value: serverName,
-                    footnote: environment.servers.isEmpty ? "No servers" : "\(environment.servers.count) available",
-                    icon: "server.rack",
-                    tint: .purple
-                )
-            }
-
-            HStack(spacing: 10) {
-                MetricTile(
-                    title: "Expires",
-                    value: viewModel.profile?.expiresAt?.shortDisplay ?? "-",
-                    footnote: "Subscription",
-                    icon: "calendar",
-                    tint: .orange
-                )
-                MetricTile(
-                    title: "Status",
-                    value: statusTitle,
-                    footnote: viewModel.profile?.status.capitalized ?? "VPN",
-                    icon: "shield.lefthalf.filled",
-                    tint: stateColor
-                )
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var currentLocationPanel: some View {
-        if let server = currentServer ?? environment.servers.first {
+    private var connectionSummaryPanel: some View {
+        VStack(spacing: 14) {
             HStack(spacing: 12) {
-                Image(systemName: "location.fill")
-                    .font(.subheadline.weight(.bold))
+                Image(systemName: "globe.europe.africa.fill")
+                    .font(.title3.weight(.bold))
                     .foregroundStyle(stateColor)
-                    .frame(width: 34, height: 34)
+                    .frame(width: 42, height: 42)
                     .background(stateColor.opacity(0.12), in: Circle())
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(server.displayName)
-                        .font(.subheadline.weight(.bold))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(serverName)
+                        .font(.headline.weight(.bold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.78)
-                    Text("\(server.proto.rawValue.uppercased()) • \(server.address):\(server.port)")
-                        .font(.caption2.weight(.medium))
+                    Text(serverDetail)
+                        .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)
@@ -248,17 +202,26 @@ struct MainVPNView: View {
 
                 Spacer()
 
-                Text(viewModel.connectionState == .connected ? "Active" : "\(environment.servers.count)")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(viewModel.connectionState == .connected ? .green : .secondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background((viewModel.connectionState == .connected ? Color.green : Color.secondary).opacity(0.12), in: Capsule())
+                HStack(spacing: 5) {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                    Text(viewModel.connectionState == .connected ? "Live" : "\(environment.servers.count)")
+                }
+                .font(.caption.weight(.bold))
+                .foregroundStyle(viewModel.connectionState == .connected ? .green : .secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background((viewModel.connectionState == .connected ? Color.green : Color.secondary).opacity(0.12), in: Capsule())
             }
-            .padding(14)
-            .frame(maxWidth: .infinity)
-            .glassSurface(cornerRadius: DS.tileRadius, strokeOpacity: 0.8)
+
+            HStack(spacing: 10) {
+                SummaryPill(title: "Used", value: usedTraffic, icon: "arrow.up")
+                SummaryPill(title: "Limit", value: trafficLimit, icon: "speedometer")
+                SummaryPill(title: "Expires", value: viewModel.profile?.expiresAt?.shortDisplay ?? "-", icon: "calendar")
+            }
         }
+        .padding(16)
+        .glassSurface(cornerRadius: 28, strokeOpacity: 0.9)
+        .padding(.top, 6)
     }
 
     private var currentServer: ServerConfig? {
@@ -340,21 +303,6 @@ struct MainVPNView: View {
         }
     }
 
-    private var headerSubtitle: String {
-        switch viewModel.connectionState {
-        case .connected:
-            "Secure tunnel running"
-        case .connecting:
-            "Preparing connection"
-        case .disconnecting:
-            "Stopping connection"
-        case .disconnected:
-            "Ready when you are"
-        case .unavailable:
-            "Needs attention"
-        }
-    }
-
     private var statusTitle: String {
         switch viewModel.connectionState {
         case .connected: "Connected"
@@ -367,10 +315,10 @@ struct MainVPNView: View {
 
     private var statusSubtitle: String {
         switch viewModel.connectionState {
-        case .connected: "Your connection is private and routed through Yeats VPN."
-        case .connecting: "Setting up the secure tunnel."
-        case .disconnecting: "Closing the tunnel cleanly."
-        case .disconnected: "Tap the button to protect your connection."
+        case .connected: "Encrypted tunnel is running"
+        case .connecting: "Setting up secure tunnel"
+        case .disconnecting: "Closing secure tunnel"
+        case .disconnected: "Tap power to connect"
         case let .unavailable(message): message
         }
     }
@@ -389,16 +337,24 @@ struct MainVPNView: View {
         }
         return environment.servers.first?.displayName ?? "-"
     }
+
+    private var serverDetail: String {
+        guard let server = currentServer ?? environment.servers.first else {
+            return "No server loaded"
+        }
+        return "\(server.proto.rawValue.uppercased()) • \(server.address):\(server.port)"
+    }
 }
 
 private struct ConnectedDurationView: View {
     let since: Date
+    var size: CGFloat = 19
 
     var body: some View {
         TimelineView(.periodic(from: since, by: 1)) { context in
             Text(duration(from: since, to: context.date))
-                .font(.system(size: 19, weight: .semibold, design: .monospaced))
-                .foregroundStyle(DS.blue)
+                .font(.system(size: size, weight: .bold, design: .monospaced))
+                .foregroundStyle(.primary.opacity(0.92))
                 .contentTransition(.numericText())
                 .animation(.linear(duration: 0.2), value: duration(from: since, to: context.date))
         }
@@ -418,42 +374,34 @@ private struct ConnectedDurationView: View {
     }
 }
 
-private struct MetricTile: View {
+private struct SummaryPill: View {
     let title: String
     let value: String
-    let footnote: String
     let icon: String
-    let tint: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(tint)
-                    .frame(width: 28, height: 28)
-                    .background(tint.opacity(0.12), in: Circle())
-                Spacer()
-            }
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+                .frame(width: 24, height: 24)
+                .background(.white.opacity(0.55), in: Circle())
+
+            VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.secondary)
                 Text(value)
-                    .font(.headline.weight(.bold))
+                    .font(.caption.weight(.bold))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.68)
-                Text(footnote)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
             }
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
-        .glassSurface(cornerRadius: DS.tileRadius, strokeOpacity: 0.8)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.34), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
