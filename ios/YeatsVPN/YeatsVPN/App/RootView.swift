@@ -32,20 +32,20 @@ struct MainVPNView: View {
             Color(uiColor: .systemGroupedBackground)
                 .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                header
-                Spacer(minLength: 30)
-                statusBlock
-                Spacer(minLength: 24)
-                connectButton
-                Spacer(minLength: 28)
-                metricsGrid
-                Spacer(minLength: 18)
-                quickActions
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 22) {
+                    header
+                    statusBlock
+                        .padding(.top, 8)
+                    connectButton
+                        .padding(.vertical, 2)
+                    metricsGrid
+                    quickActions
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 54)
+                .padding(.bottom, 28)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .padding(.bottom, 18)
         }
         .task { await viewModel.refresh() }
         .refreshable { await viewModel.refresh() }
@@ -68,9 +68,11 @@ struct MainVPNView: View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Yeats VPN")
-                    .font(.title2.weight(.bold))
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
                 Text(headerSubtitle)
-                    .font(.subheadline)
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
             }
 
@@ -88,14 +90,16 @@ struct MainVPNView: View {
             statusBadge
 
             Text(statusTitle)
-                .font(.system(size: 38, weight: .bold, design: .rounded))
+                .font(.system(size: 34, weight: .bold, design: .rounded))
                 .contentTransition(.opacity)
 
             Text(statusSubtitle)
-                .font(.body.weight(.medium))
+                .font(.subheadline.weight(.medium))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
-                .frame(maxWidth: 280)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: 330)
 
             if let since = viewModel.connectedSince, viewModel.connectionState == .connected {
                 ConnectedDurationView(since: since)
@@ -129,20 +133,20 @@ struct MainVPNView: View {
             ZStack {
                 Circle()
                     .fill(buttonFill)
-                    .frame(width: 194, height: 194)
-                    .shadow(color: stateColor.opacity(viewModel.connectionState == .disconnected ? 0.14 : 0.28), radius: 34, y: 18)
+                    .frame(width: 168, height: 168)
+                    .shadow(color: stateColor.opacity(viewModel.connectionState == .disconnected ? 0.14 : 0.24), radius: 28, y: 14)
 
                 Circle()
                     .strokeBorder(.white.opacity(0.34), lineWidth: 1)
-                    .frame(width: 194, height: 194)
+                    .frame(width: 168, height: 168)
 
                 if viewModel.connectionState == .connecting || viewModel.connectionState == .disconnecting {
                     ProgressView()
                         .tint(.white)
-                        .scaleEffect(1.45)
+                        .scaleEffect(1.3)
                 } else {
                     Image(systemName: buttonSymbol)
-                        .font(.system(size: 58, weight: .bold))
+                        .font(.system(size: 50, weight: .bold))
                         .foregroundStyle(.white)
                         .symbolEffect(.bounce, value: viewModel.connectionState == .connected)
                 }
@@ -208,26 +212,24 @@ struct MainVPNView: View {
 
     private var quickActions: some View {
         HStack(spacing: 12) {
-            Button {
+            QuickActionButton(
+                title: "Servers",
+                icon: "server.rack",
+                style: .secondary
+            ) {
                 activeSheet = .servers
-            } label: {
-                Label("Servers", systemImage: "server.rack")
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
 
-            Button {
+            QuickActionButton(
+                title: "Refresh",
+                icon: "arrow.clockwise",
+                style: .primary,
+                isLoading: viewModel.isLoading
+            ) {
                 Task { await viewModel.refresh() }
-            } label: {
-                if viewModel.isLoading {
-                    ProgressView()
-                } else {
-                    Label("Refresh", systemImage: "arrow.clockwise")
-                }
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
         }
+        .padding(.top, 2)
     }
 
     @ViewBuilder
@@ -260,8 +262,9 @@ struct MainVPNView: View {
             Image(systemName: systemImage)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.primary)
-                .frame(width: 38, height: 38)
-                .background(.thinMaterial, in: Circle())
+                .frame(width: 42, height: 42)
+                .background(Color(uiColor: .secondarySystemGroupedBackground), in: Circle())
+                .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
         }
         .buttonStyle(.plain)
     }
@@ -360,7 +363,7 @@ private struct ConnectedDurationView: View {
     var body: some View {
         TimelineView(.periodic(from: since, by: 1)) { context in
             Text(duration(from: since, to: context.date))
-                .font(.system(size: 22, weight: .semibold, design: .monospaced))
+                .font(.system(size: 21, weight: .semibold, design: .monospaced))
                 .foregroundStyle(DS.blue)
                 .contentTransition(.numericText())
                 .animation(.linear(duration: 0.2), value: duration(from: since, to: context.date))
@@ -394,18 +397,18 @@ private struct MetricTile: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Image(systemName: icon)
-                        .font(.headline)
+                        .font(.subheadline.weight(.bold))
                         .foregroundStyle(tint)
-                        .frame(width: 30, height: 30)
+                        .frame(width: 34, height: 34)
                         .background(tint.opacity(0.12), in: Circle())
                     Spacer()
                 }
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.caption.weight(.semibold))
+                        .font(.caption.weight(.bold))
                         .foregroundStyle(.secondary)
                     Text(value)
-                        .font(.headline.weight(.bold))
+                        .font(.title3.weight(.bold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)
@@ -417,14 +420,73 @@ private struct MetricTile: View {
                 }
             }
             .padding(16)
-            .frame(maxWidth: .infinity, minHeight: 132, alignment: .leading)
-            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .frame(maxWidth: .infinity, minHeight: 124, alignment: .leading)
+            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .stroke(Color(uiColor: .separator).opacity(0.16), lineWidth: 1)
             }
+            .shadow(color: .black.opacity(0.035), radius: 12, y: 6)
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct QuickActionButton: View {
+    enum Style {
+        case primary
+        case secondary
+    }
+
+    let title: String
+    let icon: String
+    let style: Style
+    var isLoading = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                if isLoading {
+                    ProgressView()
+                        .tint(style == .primary ? .white : DS.blue)
+                } else {
+                    Image(systemName: icon)
+                        .font(.headline.weight(.semibold))
+                }
+                Text(title)
+                    .font(.headline.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .foregroundStyle(foreground)
+            .background(background, in: Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(border, lineWidth: 1)
+            }
+            .shadow(color: shadow, radius: 14, y: 7)
+        }
+        .buttonStyle(.plain)
+        .disabled(isLoading)
+    }
+
+    private var foreground: Color {
+        style == .primary ? .white : DS.blue
+    }
+
+    private var background: Color {
+        style == .primary ? DS.blue : Color(uiColor: .secondarySystemGroupedBackground)
+    }
+
+    private var border: Color {
+        style == .primary ? .clear : DS.blue.opacity(0.12)
+    }
+
+    private var shadow: Color {
+        style == .primary ? DS.blue.opacity(0.18) : .black.opacity(0.04)
     }
 }
 
