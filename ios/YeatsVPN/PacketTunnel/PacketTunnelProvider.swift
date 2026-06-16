@@ -27,6 +27,7 @@ private enum StartupPhase: String, Encodable {
 }
 
 override func startTunnel(options: [String: NSObject]?, completionHandler: @escaping (Error?) -> Void) {
+    setPhase(.idle)
     logInfo("PacketTunnel startTunnel entered")
     let providerURL = (protocolConfiguration as? NETunnelProviderProtocol)?
         .providerConfiguration?["subscriptionUrl"] as? String
@@ -43,7 +44,7 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
     Task {
         do {
             logInfo("PacketTunnel start requested")
-            startupPhase = .downloadingSubscription
+            setPhase(.downloadingSubscription)
             logInfo("Downloading subscription for tunnel startup")
             let (data, response) = try await URLSession.shared.data(from: url)
             if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
@@ -54,26 +55,26 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
             }
             logInfo("Subscription downloaded, bytes: \(data.count)")
 
-            startupPhase = .buildingConfig
+            setPhase(.buildingConfig)
             let buildResult = try SingBoxConfigBuilder.build(from: rawSubscription)
             let config = buildResult.config
             logInfo("Generated sing-box config, bytes: \(config.utf8.count), outbounds: \(buildResult.outboundCount), selected: \(buildResult.selectedTag), server: \(buildResult.selectedServer)")
 
-            startupPhase = .validatingConfig
+            setPhase(.validatingConfig)
             var checkError: NSError?
             if !LibboxCheckConfig(config, &checkError) {
                 throw checkError ?? PacketTunnelError.invalidSingBoxConfig
             }
             logInfo("Libbox config validation succeeded")
 
-            startupPhase = .applyingSettings
+            setPhase(.applyingSettings)
             logInfo("Applying preflight tunnel settings before Libbox startup")
             let preflightSettings = buildTunnelSettings(from: nil)
             try await setTunnelNetworkSettingsAsync(preflightSettings)
             self.networkSettings = preflightSettings
             logInfo("Preflight tunnel settings applied")
 
-            startupPhase = .startingLibbox
+            setPhase(.startingLibbox)
             try setupLibbox()
 
             var commandError: NSError?
@@ -91,12 +92,11 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
             try box.startOrReloadService(config, options: LibboxOverrideOptions())
             self.boxService = box
 
-            startupPhase = .running
+            setPhase(.running)
             logInfo("VPN started successfully with Sing-Box integration")
             completionHandler(nil)
         } catch {
-            startupPhase = .failed
-            lastStartupError = error.localizedDescription
+            setPhase(.failed, error: error.localizedDescription)
             logError("Failed to start VPN: \(error.localizedDescription)")
             completionHandler(error)
         }
@@ -482,6 +482,26 @@ extension PacketTunnelProvider: LibboxPlatformInterfaceProtocol {
             throw setupError ?? PacketTunnelError.libboxUnavailable
         }
         logInfo("Libbox setup completed at \(baseURL.path)")
+    }
+
+    private func setPhase(_ phase: StartupPhase, error: String? = nil) {
+        startupPhase = phase
+        if let error { lastStartupError = error }
+        persistPhase()
+    }
+
+    private func persistPhase() {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) else {
+            return
+        }
+        let phaseFileURL = containerURL.appendingPathComponent("vpn-extension-phase.json")
+        let value: [String: String?] = [
+            "phase": startupPhase.rawValue,
+            "error": lastStartupError,
+            "timestamp": Self.timestamp()
+        ]
+        guard let data = try? JSONEncoder().encode(value) else { return }
+        try? data.write(to: phaseFileURL, options: [.atomic])
     }
 
     private func logInfo(_ message: String) {

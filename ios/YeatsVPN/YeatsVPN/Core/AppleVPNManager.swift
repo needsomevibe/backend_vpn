@@ -40,6 +40,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
     func connect(subscriptionURL: String) async throws {
         await logInfo("Connect requested")
         await logInfo("PacketTunnel bundle id: \(providerBundleIdentifier)")
+        SharedDiagnostics.clearPhase()
         await importExtensionDiagnostics(includeStatus: true)
         await logInfo("Loading or creating NETunnelProviderManager")
         let manager = try await loadOrCreateManager(subscriptionURL: subscriptionURL)
@@ -207,6 +208,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         if session.status == .disconnected || session.status == .invalid {
             await logError("PacketTunnel stopped during startup with status \(session.status.rawValue)")
             await logLastDisconnectError(session)
+            await logCrashPhase()
             await importExtensionDiagnostics(includeStatus: true)
             return
         }
@@ -232,6 +234,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
             if session.status == .disconnected || session.status == .invalid {
                 await logError("PacketTunnel stopped during startup with status \(session.status.rawValue)")
                 await logLastDisconnectError(session)
+                await logCrashPhase()
                 await importExtensionDiagnostics(includeStatus: true)
                 return
             }
@@ -242,6 +245,14 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
 
         await logInfo("Startup observation timed out — extension status: \(session.status.rawValue)")
         await importExtensionDiagnostics(includeStatus: true)
+    }
+
+    private func logCrashPhase() async {
+        if let phase = SharedDiagnostics.readPhase() {
+            await logError("Extension last known phase: \(phase.phase), error: \(phase.error ?? "none"), at: \(phase.timestamp)")
+        } else {
+            await logError("Extension phase file not found — App Group may not be provisioned or extension never started")
+        }
     }
 
     private func logLastDisconnectError(_ session: NETunnelProviderSession) async {
