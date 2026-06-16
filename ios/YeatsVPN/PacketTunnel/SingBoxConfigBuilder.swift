@@ -41,6 +41,7 @@ enum SingBoxConfigBuilder {
             "default": mainTag,
         ]
         let direct: [String: Any] = ["type": "direct", "tag": "direct", "domain_strategy": "prefer_ipv4"]
+        let block: [String: Any] = ["type": "block", "tag": "block"]
 
         let serverDomains = outbounds
             .compactMap { $0["server"] as? String }
@@ -51,8 +52,8 @@ enum SingBoxConfigBuilder {
             "log": ["level": "info", "timestamp": true],
             "dns": buildDNS(serverDomains: serverDomains),
             "inbounds": [buildTunInbound()],
-            "outbounds": [selector] + outbounds + [direct],
-            "route": buildRoute(serverDomains: serverDomains),
+            "outbounds": [selector] + outbounds + [direct, block],
+            "route": buildRoute(),
         ]
 
         guard let data = try? JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys]),
@@ -102,16 +103,13 @@ enum SingBoxConfigBuilder {
         ]
     }
 
-    private static func buildRoute(serverDomains: [String]) -> [String: Any] {
-        var rules: [[String: Any]] = [
-            ["action": "sniff"],
-            ["protocol": "dns", "action": "hijack-dns"],
-        ]
-        if !serverDomains.isEmpty {
-            rules.append(["domain": serverDomains, "outbound": "direct"])
-        }
-        return [
-            "rules": rules,
+    private static func buildRoute() -> [String: Any] {
+        [
+            "rules": [
+                ["action": "sniff"],
+                ["protocol": "dns", "action": "hijack-dns"],
+                ["port": 443, "network": "udp", "outbound": "block"],
+            ] as [[String: Any]],
             "final": "proxy",
         ]
     }

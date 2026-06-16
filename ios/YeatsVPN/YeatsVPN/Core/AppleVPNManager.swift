@@ -40,6 +40,14 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
     func connect(subscriptionURL: String) async throws {
         await logInfo("Connect requested")
         await logInfo("PacketTunnel bundle id: \(providerBundleIdentifier)")
+
+        // Don't restart if tunnel is already active
+        if let existing = try? await loadManager(),
+           existing.connection.status == .connected || existing.connection.status == .connecting {
+            await logInfo("Tunnel already active (status \(existing.connection.status.rawValue)), skipping reconnect")
+            return
+        }
+
         SharedDiagnostics.clearPhase()
         await importExtensionDiagnostics(includeStatus: true)
         await logInfo("Loading or creating NETunnelProviderManager")
