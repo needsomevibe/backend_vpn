@@ -68,7 +68,14 @@ final class HomeViewModel: ObservableObject {
     func connectTapped() async {
         environment.debugLog.importExtensionLogs()
         guard let url = profile?.subscriptionUrl else { return }
-        switch connectionState {
+
+        // Re-check actual NE status to avoid acting on stale UI state
+        let freshState = await environment.networkExtension.currentState()
+        if freshState != connectionState {
+            environment.connectionState = freshState
+        }
+
+        switch freshState {
         case .connected, .connecting:
             environment.connectionState = .disconnecting
             await environment.networkExtension.disconnect()
@@ -79,7 +86,6 @@ final class HomeViewModel: ObservableObject {
             do {
                 environment.debugLog.clear()
                 environment.debugLog.info("Starting fresh VPN connection attempt")
-                // Enable VPN on the backend first
                 _ = try? await environment.vpnService.enable()
                 try await environment.networkExtension.connect(subscriptionURL: url)
                 try? await Task.sleep(for: .seconds(1))
