@@ -163,7 +163,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         }
     }
 
-    private func pingProvider(_ session: NETunnelProviderSession) async {
+    private func pingProvider(_ session: NETunnelProviderSession) async -> PacketTunnelProviderStatus? {
         do {
             let data = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data?, Error>) in
                 do {
@@ -175,31 +175,58 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
                 }
             }
 
-            if let data, let response = String(data: data, encoding: .utf8) {
-                if let status = try? JSONDecoder().decode(PacketTunnelProviderStatus.self, from: data) {
-                    await logInfo("PacketTunnel provider responded: running=\(status.isRunning), subscription=\(status.subscriptionURL != nil)")
-                    for line in status.logs.suffix(20) {
-                        await logInfo("PacketTunnel live: \(line)")
-                    }
-                } else {
-                    await logInfo("PacketTunnel provider responded: \(response)")
-                }
-            } else {
-                await logInfo("PacketTunnel provider responded with empty message")
+            guard let data, !data.isEmpty else {
+                await logInfo("PacketTunnel provider responded with empty message (extension may still be starting or crashed)")
+                return nil
             }
+
+            if let status = try? JSONDecoder().decode(PacketTunnelProviderStatus.self, from: data) {
+                await logInfo("PacketTunnel provider responded: running=\(status.isRunning), phase=\(status.startupPhase ?? "unknown"), error=\(status.lastError ?? "none")")
+                for line in status.logs.suffix(20) {
+                    await logInfo("PacketTunnel live: \(line)")
+                }
+                return status
+            } else if let response = String(data: data, encoding: .utf8) {
+                await logInfo("PacketTunnel provider responded (non-JSON): \(response)")
+            } else {
+                await logInfo("PacketTunnel provider responded with \(data.count) bytes (not decodable)")
+            }
+            return nil
         } catch {
             await logError("PacketTunnel provider did not respond: \(error.localizedDescription)")
+            return nil
         }
     }
 
     private func observeStartup(_ session: NETunnelProviderSession) async {
-        for attempt in 1...5 {
-            try? await Task.sleep(for: .seconds(1))
-            await logInfo("Startup status after \(attempt)s: \(session.status.rawValue)")
-            await importExtensionDiagnostics(includeStatus: attempt == 1)
+        // Wait 2s before first ping to give extension time to download subscription and start libbox
+        try? await Task.sleep(for: .seconds(2))
+        await logInfo("Startup status after 2s: \(session.status.rawValue)")
+        await importExtensionDiagnostics(includeStatus: true)
 
+        if session.status == .disconnected || session.status == .invalid {
+            await logError("PacketTunnel stopped during startup with status \(session.status.rawValue)")
+            await logLastDisconnectError(session)
+            await importExtensionDiagnostics(includeStatus: true)
+            return
+        }
+
+        for attempt in 1...8 {
             if session.status == .connected || session.status == .connecting {
-                await pingProvider(session)
+                let status = await pingProvider(session)
+                if let status {
+                    if status.isRunning {
+                        await logInfo("PacketTunnel confirmed running after \(attempt) ping(s)")
+                        return
+                    }
+                    if status.startupPhase == "failed" {
+                        await logError("PacketTunnel startup failed: \(status.lastError ?? "unknown error")")
+                        await importExtensionDiagnostics(includeStatus: true)
+                        return
+                    }
+                    // Extension is still starting — wait and retry
+                    await logInfo("PacketTunnel still starting (phase: \(status.startupPhase ?? "unknown")), waiting...")
+                }
             }
 
             if session.status == .disconnected || session.status == .invalid {
@@ -208,7 +235,13 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
                 await importExtensionDiagnostics(includeStatus: true)
                 return
             }
+
+            try? await Task.sleep(for: .seconds(1))
+            await logInfo("Startup poll \(attempt + 1): NE status \(session.status.rawValue)")
         }
+
+        await logInfo("Startup observation timed out — extension status: \(session.status.rawValue)")
+        await importExtensionDiagnostics(includeStatus: true)
     }
 
     private func logLastDisconnectError(_ session: NETunnelProviderSession) async {
@@ -258,6 +291,8 @@ enum PacketTunnelKeys {
 
 private struct PacketTunnelProviderStatus: Decodable {
     let isRunning: Bool
+    let startupPhase: String?
+    let lastError: String?
     let subscriptionURL: String?
     let logs: [String]
 }

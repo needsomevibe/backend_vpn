@@ -12,6 +12,19 @@ private var boxService: LibboxCommandServer?
 private var networkSettings: NEPacketTunnelNetworkSettings?
 private var pathMonitor: NWPathMonitor?
 private var recentLogLines: [String] = []
+private var startupPhase: StartupPhase = .idle
+private var lastStartupError: String?
+
+private enum StartupPhase: String, Encodable {
+    case idle
+    case downloadingSubscription
+    case buildingConfig
+    case validatingConfig
+    case applyingSettings
+    case startingLibbox
+    case running
+    case failed
+}
 
 override func startTunnel(options: [String: NSObject]?, completionHandler: @escaping (Error?) -> Void) {
     logInfo("PacketTunnel startTunnel entered")
@@ -30,6 +43,7 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
     Task {
         do {
             logInfo("PacketTunnel start requested")
+            startupPhase = .downloadingSubscription
             logInfo("Downloading subscription for tunnel startup")
             let (data, response) = try await URLSession.shared.data(from: url)
             if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
@@ -40,22 +54,26 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
             }
             logInfo("Subscription downloaded, bytes: \(data.count)")
 
+            startupPhase = .buildingConfig
             let buildResult = try SingBoxConfigBuilder.build(from: rawSubscription)
             let config = buildResult.config
             logInfo("Generated sing-box config, bytes: \(config.utf8.count), outbounds: \(buildResult.outboundCount), selected: \(buildResult.selectedTag), server: \(buildResult.selectedServer)")
 
+            startupPhase = .validatingConfig
             var checkError: NSError?
             if !LibboxCheckConfig(config, &checkError) {
                 throw checkError ?? PacketTunnelError.invalidSingBoxConfig
             }
             logInfo("Libbox config validation succeeded")
 
+            startupPhase = .applyingSettings
             logInfo("Applying preflight tunnel settings before Libbox startup")
             let preflightSettings = buildTunnelSettings(from: nil)
             try await setTunnelNetworkSettingsAsync(preflightSettings)
             self.networkSettings = preflightSettings
             logInfo("Preflight tunnel settings applied")
 
+            startupPhase = .startingLibbox
             try setupLibbox()
 
             var commandError: NSError?
@@ -73,9 +91,12 @@ override func startTunnel(options: [String: NSObject]?, completionHandler: @esca
             try box.startOrReloadService(config, options: LibboxOverrideOptions())
             self.boxService = box
 
+            startupPhase = .running
             logInfo("VPN started successfully with Sing-Box integration")
             completionHandler(nil)
         } catch {
+            startupPhase = .failed
+            lastStartupError = error.localizedDescription
             logError("Failed to start VPN: \(error.localizedDescription)")
             completionHandler(error)
         }
@@ -90,6 +111,8 @@ override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @
     pathMonitor = nil
     networkSettings = nil
     subscriptionURL = nil
+    startupPhase = .idle
+    lastStartupError = nil
     completionHandler()
 }
 
@@ -97,19 +120,27 @@ override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) 
     guard let completionHandler else { return }
 
     let status = PacketTunnelStatus(
-        isRunning: subscriptionURL != nil,
+        isRunning: startupPhase == .running,
+        startupPhase: startupPhase.rawValue,
+        lastError: lastStartupError,
         subscriptionURL: subscriptionURL,
         logs: recentLogLines
     )
 
-    let data = try? JSONEncoder().encode(status)
-    completionHandler(data ?? messageData)
+    if let data = try? JSONEncoder().encode(status) {
+        completionHandler(data)
+    } else {
+        let fallback = #"{"isRunning":false,"startupPhase":"\#(startupPhase.rawValue)","logs":[]}"#
+        completionHandler(Data(fallback.utf8))
+    }
 }
 
 }
 
 private struct PacketTunnelStatus: Encodable {
 let isRunning: Bool
+let startupPhase: String
+let lastError: String?
 let subscriptionURL: String?
 let logs: [String]
 }
