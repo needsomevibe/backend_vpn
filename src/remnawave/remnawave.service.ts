@@ -12,6 +12,18 @@ import {
 
 type AnyRecord = Record<string, unknown>;
 
+/** Error carrying the upstream Remnawave status code and error code (e.g. `A030`).
+ * Extends `ServiceUnavailableException` so unhandled failures still surface as 503,
+ * while callers can inspect `errorCode` to handle idempotent cases. */
+export class RemnawaveApiError extends ServiceUnavailableException {
+  constructor(
+    readonly upstreamStatus: number | undefined,
+    readonly errorCode: string | undefined,
+  ) {
+    super('Remnawave API is unavailable');
+  }
+}
+
 @Injectable()
 export class RemnawaveService {
   private readonly logger = new Logger(RemnawaveService.name);
@@ -57,14 +69,20 @@ export class RemnawaveService {
   }
 
   async updateUser(uuid: string, input: UpdateRemnawaveUserInput): Promise<RemnawaveUser> {
+    // Remnawave's update endpoint is `PATCH /api/users` with `uuid` in the body —
+    // not `/api/users/{uuid}` (that path returns 404).
+    const data: AnyRecord = { uuid };
+    if (input.username !== undefined) data.username = input.username;
+    if (input.status !== undefined) data.status = input.status;
+    if (input.trafficLimitBytes !== undefined) {
+      data.trafficLimitBytes = Number(input.trafficLimitBytes);
+    }
+    if (input.expiresAt !== undefined) data.expireAt = input.expiresAt.toISOString();
+
     const response = await this.request<AnyRecord>({
       method: 'PATCH',
-      url: `/api/users/${uuid}`,
-      data: {
-        ...input,
-        expireAt: input.expiresAt?.toISOString(),
-        expiresAt: input.expiresAt?.toISOString(),
-      },
+      url: '/api/users',
+      data,
     });
     return this.normalizeUser(response);
   }
@@ -93,32 +111,38 @@ export class RemnawaveService {
   }
 
   async getUserUsage(uuid: string): Promise<RemnawaveUsage> {
-    try {
-      const response = await this.request<AnyRecord>({
-        method: 'GET',
-        url: `/api/bandwidth-stats/users/${uuid}`,
-      });
-      const data = this.unwrap(response);
-      return {
-        usedTrafficBytes: this.pickString(data, ['usedTrafficBytes', 'totalBytes', 'bytes']) ?? '0',
-        nodeLocation: this.pickNodeLocation(data),
-      };
-    } catch {
-      const user = await this.getUserByUuid(uuid);
-      return {
-        usedTrafficBytes: user.usedTrafficBytes,
-        nodeLocation: user.lastConnectedNode?.country ?? user.lastConnectedNode?.name,
-      };
-    }
+    // The cumulative used traffic and last node live on the user object.
+    // (`/api/bandwidth-stats/users/{uuid}` returns per-node usage over a date
+    // range, not the cumulative total, and requires `start`/`end` params.)
+    const user = await this.getUserByUuid(uuid);
+    return {
+      usedTrafficBytes: user.usedTrafficBytes,
+      nodeLocation: user.lastConnectedNode?.country ?? user.lastConnectedNode?.name,
+    };
   }
 
-  private async updateStatus(uuid: string, status: string, actionUrl: string) {
+  private async updateStatus(uuid: string, status: 'ACTIVE' | 'DISABLED', actionUrl: string) {
     try {
       const response = await this.request<AnyRecord>({ method: 'POST', url: actionUrl });
       return this.normalizeUser(response);
-    } catch {
+    } catch (error) {
+      // Enabling an already-enabled user (or disabling an already-disabled one)
+      // is a no-op success, not a failure. Remnawave returns 400 A030/A029.
+      if (this.isAlreadyInStatus(error, status)) {
+        this.logger.log(`User ${uuid} already ${status}; treating as success`);
+        return this.getUserByUuid(uuid);
+      }
+      // Otherwise fall back to a direct status update via PATCH /api/users.
       return this.updateUser(uuid, { status });
     }
+  }
+
+  /** A030 = user already enabled, A029 = user already disabled. */
+  private isAlreadyInStatus(error: unknown, status: 'ACTIVE' | 'DISABLED'): boolean {
+    if (!(error instanceof RemnawaveApiError)) {
+      return false;
+    }
+    return status === 'ACTIVE' ? error.errorCode === 'A030' : error.errorCode === 'A029';
   }
 
   private async request<T = unknown>(config: AxiosRequestConfig): Promise<T> {
@@ -137,14 +161,18 @@ export class RemnawaveService {
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError;
+      const status = axiosError.response?.status;
+      const body = axiosError.response?.data;
       const responseData =
-        axiosError.response?.data && typeof axiosError.response.data === 'object'
-          ? JSON.stringify(axiosError.response.data)
-          : axiosError.response?.data;
+        body && typeof body === 'object' ? JSON.stringify(body) : body;
+      const errorCode =
+        body && typeof body === 'object'
+          ? (body as AnyRecord)['errorCode']
+          : undefined;
       this.logger.error(
-        `Remnawave request failed: ${config.method} ${config.url} ${axiosError.response?.status ?? ''} ${responseData ?? ''}`,
+        `Remnawave request failed: ${config.method} ${config.url} ${status ?? ''} ${responseData ?? ''}`,
       );
-      throw new ServiceUnavailableException('Remnawave API is unavailable');
+      throw new RemnawaveApiError(status, typeof errorCode === 'string' ? errorCode : undefined);
     }
   }
 
@@ -210,13 +238,5 @@ export class RemnawaveService {
       }
     }
     return undefined;
-  }
-
-  private pickNodeLocation(data: AnyRecord) {
-    const node = this.pickRecord(data, ['lastConnectedNode', 'node']);
-    if (!node) {
-      return undefined;
-    }
-    return this.pickString(node, ['country', 'name', 'location']);
   }
 }
