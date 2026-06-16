@@ -31,20 +31,16 @@ struct MainVPNView: View {
         ZStack {
             AmbientBackground(tint: stateColor)
 
-            ScrollView {
-                VStack(spacing: 16) {
-                    header
-                    statusBlock
-                    connectButton
-                    metricsGrid
-                    serversSection
-                }
-                .padding(.horizontal, 18)
-                .padding(.top, 8)
-                .padding(.bottom, 28)
+            VStack(spacing: 13) {
+                header
+                statusBlock
+                connectButton
+                metricsGrid
+                currentLocationPanel
             }
-            .scrollIndicators(.hidden)
-            .refreshable { await viewModel.refresh() }
+            .padding(.horizontal, 18)
+            .padding(.top, 50)
+            .padding(.bottom, 16)
         }
         .task { await viewModel.refresh() }
         .sheet(item: $activeSheet) { sheet in
@@ -133,22 +129,22 @@ struct MainVPNView: View {
             ZStack {
                 Circle()
                     .fill(stateColor)
-                    .frame(width: 196, height: 196)
-                    .blur(radius: 46)
+                    .frame(width: 170, height: 170)
+                    .blur(radius: 40)
                     .opacity(glowOpacity)
 
                 ConnectionRings(color: stateColor, isActive: ringsActive)
-                    .frame(width: 178, height: 178)
+                    .frame(width: 156, height: 156)
 
                 ZStack {
                     Circle().fill(buttonFill)
                     Circle().fill(DS.glassSheen)
                 }
-                .frame(width: 142, height: 142)
+                .frame(width: 122, height: 122)
                 .overlay {
                     Circle().strokeBorder(.white.opacity(0.4), lineWidth: 1.2)
                 }
-                .shadow(color: stateColor.opacity(0.38), radius: 26, y: 14)
+                .shadow(color: stateColor.opacity(0.34), radius: 22, y: 12)
 
                 if viewModel.connectionState == .connecting || viewModel.connectionState == .disconnecting {
                     ProgressView()
@@ -156,7 +152,7 @@ struct MainVPNView: View {
                         .scaleEffect(1.3)
                 } else {
                     Image(systemName: buttonSymbol)
-                        .font(.system(size: 42, weight: .bold))
+                        .font(.system(size: 36, weight: .bold))
                         .foregroundStyle(.white)
                         .symbolEffect(.bounce, value: viewModel.connectionState == .connected)
                 }
@@ -229,39 +225,51 @@ struct MainVPNView: View {
     }
 
     @ViewBuilder
-    private var serversSection: some View {
-        if !environment.servers.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text("Locations")
-                        .font(.subheadline.weight(.bold))
-                    Spacer()
-                    Text("\(environment.servers.count)")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 2)
+    private var currentLocationPanel: some View {
+        if let server = currentServer ?? environment.servers.first {
+            HStack(spacing: 12) {
+                Image(systemName: "location.fill")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(stateColor)
+                    .frame(width: 34, height: 34)
+                    .background(stateColor.opacity(0.12), in: Circle())
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(environment.servers) { server in
-                            ServerCard(server: server, isCurrent: isCurrentServer(server))
-                        }
-                    }
-                    .padding(.horizontal, 2)
-                    .padding(.vertical, 4)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(server.displayName)
+                        .font(.subheadline.weight(.bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                    Text("\(server.proto.rawValue.uppercased()) • \(server.address):\(server.port)")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
                 }
+
+                Spacer()
+
+                Text(viewModel.connectionState == .connected ? "Active" : "\(environment.servers.count)")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(viewModel.connectionState == .connected ? .green : .secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background((viewModel.connectionState == .connected ? Color.green : Color.secondary).opacity(0.12), in: Capsule())
             }
+            .padding(14)
+            .frame(maxWidth: .infinity)
+            .glassSurface(cornerRadius: DS.tileRadius, strokeOpacity: 0.8)
         }
     }
 
-    private func isCurrentServer(_ server: ServerConfig) -> Bool {
+    private var currentServer: ServerConfig? {
         guard viewModel.connectionState == .connected,
               let location = viewModel.profile?.nodeLocation, !location.isEmpty else {
-            return false
+            return nil
         }
-        return server.name.localizedCaseInsensitiveContains(location)
-            || location.localizedCaseInsensitiveContains(server.name)
+        return environment.servers.first { server in
+            server.name.localizedCaseInsensitiveContains(location)
+                || location.localizedCaseInsensitiveContains(server.name)
+        }
     }
 
     @ViewBuilder
@@ -446,47 +454,6 @@ private struct MetricTile: View {
         .padding(14)
         .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
         .glassSurface(cornerRadius: DS.tileRadius, strokeOpacity: 0.8)
-    }
-}
-
-private struct ServerCard: View {
-    let server: ServerConfig
-    let isCurrent: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "globe")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(isCurrent ? .green : DS.blue)
-                    .frame(width: 30, height: 30)
-                    .background((isCurrent ? Color.green : DS.blue).opacity(0.12), in: Circle())
-                Spacer()
-                if isCurrent {
-                    Circle()
-                        .fill(.green)
-                        .frame(width: 8, height: 8)
-                }
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                Text(server.displayName)
-                    .font(.subheadline.weight(.bold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Text(isCurrent ? "Active" : server.proto.rawValue.uppercased())
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(isCurrent ? .green : .secondary)
-            }
-        }
-        .padding(14)
-        .frame(width: 150, height: 96, alignment: .leading)
-        .glassSurface(cornerRadius: DS.tileRadius, strokeOpacity: 0.8)
-        .overlay {
-            if isCurrent {
-                RoundedRectangle(cornerRadius: DS.tileRadius, style: .continuous)
-                    .strokeBorder(Color.green.opacity(0.5), lineWidth: 1.5)
-            }
-        }
     }
 }
 
