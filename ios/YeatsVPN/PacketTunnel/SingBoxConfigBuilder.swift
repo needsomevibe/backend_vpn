@@ -48,12 +48,15 @@ enum SingBoxConfigBuilder {
             .filter { !$0.isEmpty && !isIPAddress($0) }
             .uniqued()
 
+        // Domains that should bypass proxy (app's own API, VPN backend)
+        let bypassDomains = ["api.yeats.uz"] + serverDomains
+
         let config: [String: Any] = [
             "log": ["level": "info", "timestamp": true],
-            "dns": buildDNS(serverDomains: serverDomains),
+            "dns": buildDNS(directDomains: bypassDomains),
             "inbounds": [buildTunInbound()],
             "outbounds": [selector] + outbounds + [direct, block],
-            "route": buildRoute(),
+            "route": buildRoute(bypassDomains: bypassDomains),
         ]
 
         guard let data = try? JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys]),
@@ -71,10 +74,10 @@ enum SingBoxConfigBuilder {
 
     // MARK: - Top-Level Sections
 
-    private static func buildDNS(serverDomains: [String]) -> [String: Any] {
+    private static func buildDNS(directDomains: [String]) -> [String: Any] {
         var rules: [[String: Any]] = []
-        if !serverDomains.isEmpty {
-            rules.append(["domain": serverDomains, "action": "route", "server": "dns-direct"])
+        if !directDomains.isEmpty {
+            rules.append(["domain": directDomains, "action": "route", "server": "dns-direct"])
         }
         rules.append(["action": "route", "server": "dns-remote"])
 
@@ -103,13 +106,17 @@ enum SingBoxConfigBuilder {
         ]
     }
 
-    private static func buildRoute() -> [String: Any] {
-        [
-            "rules": [
-                ["action": "sniff"],
-                ["protocol": "dns", "action": "hijack-dns"],
-                ["port": 443, "network": "udp", "outbound": "block"],
-            ] as [[String: Any]],
+    private static func buildRoute(bypassDomains: [String]) -> [String: Any] {
+        var rules: [[String: Any]] = [
+            ["action": "sniff"],
+            ["protocol": "dns", "action": "hijack-dns"],
+        ]
+        if !bypassDomains.isEmpty {
+            rules.append(["domain": bypassDomains, "outbound": "direct"])
+        }
+        rules.append(["port": 443, "network": "udp", "outbound": "block"])
+        return [
+            "rules": rules,
             "final": "proxy",
         ]
     }
