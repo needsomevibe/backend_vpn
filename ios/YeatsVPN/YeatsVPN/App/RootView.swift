@@ -64,7 +64,7 @@ struct MainVPNView: View {
     private var header: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Yeats VPN")
+                Text("Remna")
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)

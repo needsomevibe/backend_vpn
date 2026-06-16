@@ -21,7 +21,7 @@ struct HomeView: View {
             }
             .refreshable { await viewModel.refresh() }
             .background(DS.background)
-            .navigationTitle("Yeats VPN")
+            .navigationTitle("Remna")
             .task { await viewModel.refresh() }
         }
     }

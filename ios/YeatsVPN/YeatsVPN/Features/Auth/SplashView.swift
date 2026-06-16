@@ -10,7 +10,7 @@ struct SplashView: View {
                 .scaleEffect(animate ? 1 : 0.86)
                 .opacity(animate ? 1 : 0.2)
             VStack(spacing: 8) {
-                Text("Yeats VPN")
+                Text("Remna")
                     .font(.system(size: 36, weight: .bold, design: .rounded))
                 Text("Private. Fast. Quiet.")
                     .foregroundStyle(.secondary)
