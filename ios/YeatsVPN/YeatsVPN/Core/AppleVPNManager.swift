@@ -9,7 +9,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
     private let debugLog: DebugLogStore?
     private var statusObserver: NSObjectProtocol?
 
-    var onStateChange: (@Sendable (VPNConnectionState) -> Void)?
+    var onStateChange: (@Sendable (VPNConnectionState, Date?) -> Void)?
 
     init(debugLog: DebugLogStore? = nil) {
         self.debugLog = debugLog
@@ -35,6 +35,11 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
             await logError("Failed to load VPN state: \(error.localizedDescription)")
             return .unavailable(error.localizedDescription)
         }
+    }
+
+    func connectedDate() async -> Date? {
+        guard let manager = try? await loadManager() else { return nil }
+        return manager.connection.connectedDate
     }
 
     func connect(subscriptionURL: String) async throws {
@@ -141,7 +146,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         ) { [weak self] notification in
             guard let connection = notification.object as? NEVPNConnection else { return }
             let state = self?.mapStatus(connection.status) ?? .disconnected
-            self?.onStateChange?(state)
+            self?.onStateChange?(state, connection.connectedDate)
             Task { await self?.logInfo("NE status changed: \(connection.status.rawValue)") }
         }
     }

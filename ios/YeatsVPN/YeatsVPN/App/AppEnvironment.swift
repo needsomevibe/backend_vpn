@@ -67,13 +67,19 @@ final class AppEnvironment: ObservableObject {
             networkExtension: vpnManager
         )
         env.refreshNetworkSession = { [weak apiClient] in apiClient?.resetSession() }
-        vpnManager.onStateChange = { [weak env] state in
+        vpnManager.onStateChange = { [weak env] state, connectedDate in
             Task { @MainActor in
-                env?.connectionState = state
-                if state == .connected && env?.connectedSince == nil {
-                    env?.connectedSince = Date()
-                } else if state == .disconnected || state == .disconnecting {
-                    env?.connectedSince = nil
+                guard let env else { return }
+                env.connectionState = state
+                switch state {
+                case .connected:
+                    // Use the system-tracked connect time so the duration is
+                    // accurate and survives app restarts (not reset to "now").
+                    env.connectedSince = connectedDate ?? env.connectedSince ?? Date()
+                case .disconnected, .disconnecting:
+                    env.connectedSince = nil
+                default:
+                    break
                 }
             }
         }
@@ -98,7 +104,7 @@ final class AppEnvironment: ObservableObject {
             debugLog.info("Session restored")
             connectionState = await networkExtension.currentState()
             if connectionState == .connected {
-                connectedSince = Date()
+                connectedSince = await networkExtension.connectedDate() ?? Date()
             }
             route = .main
             // Load server list in background
