@@ -4,15 +4,23 @@ import AuthenticationServices
 struct LoginView: View {
     @EnvironmentObject private var environment: AppEnvironment
     @StateObject var viewModel: AuthViewModel
+    @State private var appear = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
-                    LogoMark(size: 74)
+                    ZStack {
+                        Circle()
+                            .fill(DS.blue)
+                            .frame(width: 150, height: 150)
+                            .blur(radius: 55)
+                            .opacity(0.4)
+                        LogoMark(size: 74)
+                    }
                     VStack(spacing: 8) {
                         Text("Welcome back")
-                            .font(.largeTitle.bold())
+                            .font(.system(.largeTitle, design: .rounded).weight(.bold))
                         Text("Sign in to manage your private VPN access.")
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -44,8 +52,15 @@ struct LoginView: View {
                     .foregroundStyle(DS.blue)
                 }
                 .padding(24)
+                .opacity(appear ? 1 : 0)
+                .offset(y: appear ? 0 : 16)
             }
             .background(AmbientBackground())
+        }
+        .task {
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.8)) {
+                appear = true
+            }
         }
     }
 }
