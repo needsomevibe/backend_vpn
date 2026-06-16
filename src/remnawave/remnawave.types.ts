@@ -28,5 +28,8 @@ export type UpdateRemnawaveUserInput = Partial<{
 
 export type RemnawaveUsage = {
   usedTrafficBytes: string;
+  trafficLimitBytes?: string;
+  expiresAt?: string;
+  subscriptionUrl?: string;
   nodeLocation?: string;
 };

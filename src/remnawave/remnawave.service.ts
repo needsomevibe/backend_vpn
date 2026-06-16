@@ -117,6 +117,9 @@ export class RemnawaveService {
     const user = await this.getUserByUuid(uuid);
     return {
       usedTrafficBytes: user.usedTrafficBytes,
+      trafficLimitBytes: user.trafficLimitBytes,
+      expiresAt: user.expiresAt,
+      subscriptionUrl: user.subscriptionUrl,
       nodeLocation: user.lastConnectedNode?.country ?? user.lastConnectedNode?.name,
     };
   }

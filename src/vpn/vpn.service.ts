@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SubscriptionStatus, VpnAccountStatus } from '@prisma/client';
+import { SubscriptionStatus, VpnAccount, VpnAccountStatus } from '@prisma/client';
 import { jsonSafe } from '../common/serializers/json-safe';
 import { PrismaService } from '../prisma/prisma.service';
 import { RemnawaveService } from '../remnawave/remnawave.service';
@@ -19,38 +19,27 @@ export class VpnService {
 
   async getProfile(userId: string) {
     const { vpn, subscription } = await this.getVpnContext(userId);
-    const usage = await this.remnawave.getUserUsage(vpn.remnawaveUuid);
-    const usedTrafficBytes = BigInt(usage.usedTrafficBytes);
-
-    await this.prisma.vpnAccount.update({
-      where: { id: vpn.id },
-      data: { usedTrafficBytes },
-    });
+    const synced = await this.syncVpnAccountFromRemnawave(vpn);
 
     return {
-      status: vpn.status.toLowerCase(),
-      subscriptionUrl: vpn.subscriptionUrl,
-      trafficUsedGb: this.bytesToGb(usedTrafficBytes),
-      trafficLimitGb: this.bytesToGb(vpn.trafficLimitBytes),
-      expiresAt: subscription?.expiresAt ?? vpn.expiresAt,
-      nodeLocation: usage.nodeLocation ?? 'US',
+      status: synced.vpn.status.toLowerCase(),
+      subscriptionUrl: synced.vpn.subscriptionUrl,
+      trafficUsedGb: this.bytesToGb(synced.vpn.usedTrafficBytes),
+      trafficLimitGb: this.bytesToGb(synced.vpn.trafficLimitBytes),
+      expiresAt: subscription?.expiresAt ?? synced.vpn.expiresAt,
+      nodeLocation: synced.nodeLocation ?? 'US',
     };
   }
 
   async getUsage(userId: string) {
     const { vpn } = await this.getVpnContext(userId);
-    const usage = await this.remnawave.getUserUsage(vpn.remnawaveUuid);
-    const usedTrafficBytes = BigInt(usage.usedTrafficBytes);
-    await this.prisma.vpnAccount.update({
-      where: { id: vpn.id },
-      data: { usedTrafficBytes },
-    });
+    const synced = await this.syncVpnAccountFromRemnawave(vpn);
     return {
-      usedTrafficBytes: usedTrafficBytes.toString(),
-      usedTrafficGb: this.bytesToGb(usedTrafficBytes),
-      trafficLimitBytes: vpn.trafficLimitBytes.toString(),
-      trafficLimitGb: this.bytesToGb(vpn.trafficLimitBytes),
-      nodeLocation: usage.nodeLocation ?? null,
+      usedTrafficBytes: synced.vpn.usedTrafficBytes.toString(),
+      usedTrafficGb: this.bytesToGb(synced.vpn.usedTrafficBytes),
+      trafficLimitBytes: synced.vpn.trafficLimitBytes.toString(),
+      trafficLimitGb: this.bytesToGb(synced.vpn.trafficLimitBytes),
+      nodeLocation: synced.nodeLocation ?? null,
     };
   }
 
@@ -118,6 +107,29 @@ export class VpnService {
       throw new ForbiddenException('VPN account is not active');
     }
     return { vpn: user.vpnAccount, subscription: user.subscriptions[0] ?? null };
+  }
+
+  private async syncVpnAccountFromRemnawave(vpn: VpnAccount) {
+    const usage = await this.remnawave.getUserUsage(vpn.remnawaveUuid);
+    const usedTrafficBytes = BigInt(usage.usedTrafficBytes);
+    const trafficLimitBytes =
+      usage.trafficLimitBytes !== undefined
+        ? BigInt(usage.trafficLimitBytes)
+        : vpn.trafficLimitBytes;
+    const expiresAt = usage.expiresAt ? new Date(usage.expiresAt) : vpn.expiresAt;
+    const subscriptionUrl = usage.subscriptionUrl ?? vpn.subscriptionUrl;
+
+    const updated = await this.prisma.vpnAccount.update({
+      where: { id: vpn.id },
+      data: {
+        usedTrafficBytes,
+        trafficLimitBytes,
+        expiresAt,
+        subscriptionUrl,
+      },
+    });
+
+    return { vpn: updated, nodeLocation: usage.nodeLocation };
   }
 
   private async ensureSubscriptionAllowsVpn(userId: string) {
