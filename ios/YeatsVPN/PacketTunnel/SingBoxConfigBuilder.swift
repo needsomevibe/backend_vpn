@@ -41,14 +41,12 @@ enum SingBoxConfigBuilder {
             "default": mainTag,
         ]
         let direct: [String: Any] = ["type": "direct", "tag": "direct"]
-        let block: [String: Any]  = ["type": "block",  "tag": "block"]
-        let dnsOut: [String: Any]  = ["type": "dns",    "tag": "dns-out"]
 
         let config: [String: Any] = [
             "log": ["level": "info", "timestamp": true],
             "dns": buildDNS(),
             "inbounds": [buildTunInbound()],
-            "outbounds": [selector] + outbounds + [direct, block, dnsOut],
+            "outbounds": [selector] + outbounds + [direct],
             "route": buildRoute(),
         ]
 
@@ -70,12 +68,11 @@ enum SingBoxConfigBuilder {
     private static func buildDNS() -> [String: Any] {
         [
             "servers": [
-                ["tag": "dns-remote",  "address": "https://1.1.1.1/dns-query", "detour": "proxy"],
-                ["tag": "dns-direct",  "address": "https://1.1.1.1/dns-query", "detour": "direct"],
-                ["tag": "dns-block",   "address": "rcode://success"],
+                ["type": "https", "tag": "dns-remote", "server": "1.1.1.1", "detour": "proxy"],
+                ["type": "https", "tag": "dns-direct", "server": "1.1.1.1", "detour": "direct"],
             ],
             "rules": [
-                ["outbound": ["any"], "server": "dns-direct"],
+                ["action": "route", "server": "dns-remote"],
             ],
             "final": "dns-remote",
             "strategy": "prefer_ipv4",
@@ -86,21 +83,22 @@ enum SingBoxConfigBuilder {
         [
             "type": "tun",
             "tag": "tun-in",
-            "inet4_address": "172.19.0.1/30",
-            "inet6_address": "fdfe:dcba:9876::1/126",
+            "address": [
+                "172.19.0.1/30",
+                "fdfe:dcba:9876::1/126",
+            ],
             "mtu": 1500,
             "auto_route": true,
             "strict_route": false,
             "stack": "gvisor",
-            "sniff": true,
-            "sniff_override_destination": true,
         ]
     }
 
     private static func buildRoute() -> [String: Any] {
         [
             "rules": [
-                ["protocol": "dns", "outbound": "dns-out"],
+                ["action": "sniff"],
+                ["protocol": "dns", "action": "hijack-dns"],
             ],
             "auto_detect_interface": true,
             "final": "proxy",
