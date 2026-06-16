@@ -64,6 +64,17 @@ struct VPNProfile: Codable, Equatable {
         self.expiresAt = account.expiresAt
         self.nodeLocation = nil
     }
+
+    func applying(usage: VPNUsage) -> VPNProfile {
+        VPNProfile(
+            status: status,
+            subscriptionUrl: subscriptionUrl,
+            trafficUsedGb: usage.usedTrafficGb,
+            trafficLimitGb: usage.trafficLimitGb,
+            expiresAt: expiresAt,
+            nodeLocation: usage.nodeLocation ?? nodeLocation
+        )
+    }
 }
 
 struct VPNUsage: Codable, Equatable {

@@ -56,8 +56,10 @@ final class HomeViewModel: ObservableObject {
         do {
             async let profileResult = environment.vpnService.profile()
             async let usageResult = environment.vpnService.usage()
-            self.profile = try await profileResult
-            self.usage = try await usageResult
+            let freshProfile = try await profileResult
+            let freshUsage = try await usageResult
+            self.usage = freshUsage
+            self.profile = freshProfile.applying(usage: freshUsage)
             environment.vpnProfile = self.profile
             if let url = self.profile?.subscriptionUrl, !url.isEmpty {
                 try? await environment.networkExtension.refreshConfiguration(subscriptionURL: url)

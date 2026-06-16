@@ -23,6 +23,31 @@ final class YeatsVPNTests: XCTestCase {
         XCTAssertEqual(profile.subscriptionUrl, "https://sub.yeats.uz/short")
     }
 
+    func testVPNProfileAppliesUsageResponse() {
+        let profile = VPNProfile(
+            status: "active",
+            subscriptionUrl: "https://sub.yeats.uz/short",
+            trafficUsedGb: 0,
+            trafficLimitGb: 100,
+            expiresAt: nil,
+            nodeLocation: nil
+        )
+        let usage = VPNUsage(
+            usedTrafficBytes: "3221225472",
+            usedTrafficGb: 3,
+            trafficLimitBytes: "107374182400",
+            trafficLimitGb: 100,
+            nodeLocation: "DE"
+        )
+
+        let updated = profile.applying(usage: usage)
+
+        XCTAssertEqual(updated.trafficUsedGb, 3)
+        XCTAssertEqual(updated.trafficLimitGb, 100)
+        XCTAssertEqual(updated.nodeLocation, "DE")
+        XCTAssertEqual(updated.subscriptionUrl, profile.subscriptionUrl)
+    }
+
     func testTokenStorePersistsTokens() async throws {
         let keychain = MockKeychainService()
         let store = TokenStore(keychain: keychain)

@@ -202,12 +202,13 @@ export class RemnawaveService {
       shortUuid,
       username: this.pickString(data, ['username']) ?? fallbackUsername ?? uuid,
       status: this.pickString(data, ['status']),
-      usedTrafficBytes: this.pickString(data, [
-        'usedTrafficBytes',
-        'usedTraffic',
-        'trafficUsedBytes',
-      ]) ?? '0',
-      trafficLimitBytes: this.pickString(data, ['trafficLimitBytes', 'trafficLimit']),
+      usedTrafficBytes: this.pickUsedTrafficBytes(data) ?? '0',
+      trafficLimitBytes:
+        this.pickString(data, ['trafficLimitBytes', 'trafficLimit']) ??
+        this.pickString(this.pickRecord(data, ['userTraffic', 'traffic', 'trafficStats']) ?? {}, [
+          'trafficLimitBytes',
+          'trafficLimit',
+        ]),
       expiresAt: this.pickString(data, ['expiresAt', 'expireAt']),
       subscriptionUrl: subscriptionPath,
       lastConnectedNode: this.pickRecord(data, ['lastConnectedNode']),
@@ -234,6 +235,52 @@ export class RemnawaveService {
       }
     }
     return undefined;
+  }
+
+  private pickUsedTrafficBytes(data: AnyRecord): string | undefined {
+    const direct = this.pickString(data, [
+      'usedTrafficBytes',
+      'usedTraffic',
+      'trafficUsedBytes',
+      'usedBytes',
+      'totalUsedBytes',
+    ]);
+    if (direct !== undefined) {
+      return direct;
+    }
+
+    for (const key of ['userTraffic', 'traffic', 'trafficStats']) {
+      const nested = this.pickRecord(data, [key]);
+      if (!nested) continue;
+
+      const nestedTotal = this.pickString(nested, [
+        'usedTrafficBytes',
+        'usedTraffic',
+        'trafficUsedBytes',
+        'usedBytes',
+        'totalUsedBytes',
+        'totalBytes',
+      ]);
+      if (nestedTotal !== undefined) {
+        return nestedTotal;
+      }
+
+      const upload = this.pickString(nested, ['uploadBytes', 'uploadedBytes', 'upBytes']);
+      const download = this.pickString(nested, ['downloadBytes', 'downloadedBytes', 'downBytes']);
+      if (upload !== undefined && download !== undefined) {
+        return this.sumByteStrings(upload, download);
+      }
+    }
+
+    return undefined;
+  }
+
+  private sumByteStrings(left: string, right: string): string | undefined {
+    try {
+      return (BigInt(left) + BigInt(right)).toString();
+    } catch {
+      return undefined;
+    }
   }
 
   private pickString(obj: AnyRecord, keys: string[]) {

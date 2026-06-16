@@ -74,4 +74,35 @@ describe('RemnawaveService', () => {
       }),
     );
   });
+
+  it('normalizes nested Remnawave user traffic counters', async () => {
+    http.request.mockReturnValue(
+      of({
+        data: {
+          response: {
+            user: {
+              uuid: 'uuid-traffic',
+              shortUuid: 'traffic',
+              username: 'ios_user',
+              userTraffic: {
+                uploadBytes: '1073741824',
+                downloadBytes: '2147483648',
+                trafficLimitBytes: '107374182400',
+              },
+            },
+          },
+        },
+      }),
+    );
+
+    const service = await buildService();
+    const result = await service.getUserUsage('uuid-traffic');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        usedTrafficBytes: '3221225472',
+        trafficLimitBytes: '107374182400',
+      }),
+    );
+  });
 });
