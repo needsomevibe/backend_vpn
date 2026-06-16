@@ -26,8 +26,8 @@ final class DebugLogStore: ObservableObject {
         SharedDiagnostics.clear()
     }
 
-    func importExtensionLogs() {
-        if !didLogSharedDiagnosticsStatus {
+    func importExtensionLogs(includeStatus: Bool = false) {
+        if includeStatus || !didLogSharedDiagnosticsStatus {
             didLogSharedDiagnosticsStatus = true
             append(level: "diagnostic", message: SharedDiagnostics.statusMessage)
         }

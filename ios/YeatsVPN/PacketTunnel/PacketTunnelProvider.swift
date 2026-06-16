@@ -13,10 +13,12 @@ private var networkSettings: NEPacketTunnelNetworkSettings?
 private var pathMonitor: NWPathMonitor?
 
 override func startTunnel(options: [String: NSObject]?, completionHandler: @escaping (Error?) -> Void) {
+    logInfo("PacketTunnel startTunnel entered")
     let providerURL = (protocolConfiguration as? NETunnelProviderProtocol)?
         .providerConfiguration?["subscriptionUrl"] as? String
     let optionURL = options?["subscriptionUrl"] as? String
     subscriptionURL = optionURL ?? providerURL
+    logInfo("PacketTunnel subscription URL present: \(subscriptionURL != nil)")
 
     guard let subscriptionURL, let url = URL(string: subscriptionURL) else {
         logError("Missing subscription URL in provider configuration/options")

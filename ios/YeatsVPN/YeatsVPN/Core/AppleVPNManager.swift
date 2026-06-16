@@ -39,6 +39,8 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
 
     func connect(subscriptionURL: String) async throws {
         await logInfo("Connect requested")
+        await logInfo("PacketTunnel bundle id: \(providerBundleIdentifier)")
+        await importExtensionDiagnostics(includeStatus: true)
         await logInfo("Loading or creating NETunnelProviderManager")
         let manager = try await loadOrCreateManager(subscriptionURL: subscriptionURL)
         await logInfo("Saving VPN configuration")
@@ -187,9 +189,7 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
         for attempt in 1...5 {
             try? await Task.sleep(for: .seconds(1))
             await logInfo("Startup status after \(attempt)s: \(session.status.rawValue)")
-            await MainActor.run {
-                debugLog?.importExtensionLogs()
-            }
+            await importExtensionDiagnostics(includeStatus: attempt == 1)
 
             if session.status == .connected || session.status == .connecting {
                 await pingProvider(session)
@@ -197,11 +197,32 @@ final class AppleVPNManager: NetworkExtensionManaging, @unchecked Sendable {
 
             if session.status == .disconnected || session.status == .invalid {
                 await logError("PacketTunnel stopped during startup with status \(session.status.rawValue)")
-                await MainActor.run {
-                    debugLog?.importExtensionLogs()
-                }
+                await logLastDisconnectError(session)
+                await importExtensionDiagnostics(includeStatus: true)
                 return
             }
+        }
+    }
+
+    private func logLastDisconnectError(_ session: NETunnelProviderSession) async {
+        guard #available(iOS 16.0, *) else { return }
+        let error = await withCheckedContinuation { (continuation: CheckedContinuation<Error?, Never>) in
+            session.fetchLastDisconnectError { error in
+                continuation.resume(returning: error)
+            }
+        }
+
+        if let error {
+            let nsError = error as NSError
+            await logError("Last VPN disconnect error: \(nsError.domain) code \(nsError.code) - \(nsError.localizedDescription)")
+        } else {
+            await logInfo("Last VPN disconnect error: none")
+        }
+    }
+
+    private func importExtensionDiagnostics(includeStatus: Bool) async {
+        await MainActor.run {
+            debugLog?.importExtensionLogs(includeStatus: includeStatus)
         }
     }
 
